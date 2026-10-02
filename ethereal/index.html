@@ -26,7 +26,6 @@
     --muted: #A9AFBA;
     --sel-o: .075;
     --glass: .52;
-    --cur-shadow: rgba(47, 116, 244, .38);
     --liquid: #2F74F4;
     --on-liquid: #FFFFFF;
     --shadow: rgba(38, 66, 128, .16);
@@ -57,7 +56,6 @@
     display: grid; gap: clamp(16px, 2.4vw, 26px);
   }
   .frame { border: 1px solid var(--line); border-radius: clamp(22px, 4vw, 40px); background: var(--panel); overflow: hidden; min-width: 0; }
-  #glow { pointer-events: none; }
   .frame svg { display: block; width: 100%; height: auto; }
 
   .controls { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
@@ -85,7 +83,7 @@
   #selWrap { opacity: var(--sel-o); pointer-events: none; }
   .sf { fill: var(--on-surface); }
   .sl { stroke: var(--on-surface); stroke-linecap: round; fill: none; }
-  .ico { fill: none; stroke: var(--muted); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+  .ico { fill: none; stroke: var(--muted); stroke-width: 1.25; stroke-linecap: round; stroke-linejoin: round; }
   .ico .shape, .ico .detail { transition: fill .25s ease, stroke .25s ease; }
   .ico .shape { fill: transparent; }
   .ico.on .shape { fill: var(--on-surface); stroke: var(--on-surface); }   /* selected: the outline fills solid */
@@ -97,9 +95,8 @@
   #num, .tipText, .rTitle, .rBody, .rAct { font-family: var(--ui); pointer-events: none; stroke: none; }
   #num { fill: var(--on-liquid); font-weight: 600; font-size: 10.5px; text-anchor: middle; }
   #badge, #cur, #liq, #blueWrap, #cTipA { pointer-events: none; }
-  #cur { filter: drop-shadow(0 1.1px 1.8px var(--cur-shadow)); }
-  #curBody { fill: url(#curGrad); stroke: var(--liquid); stroke-opacity: .55; stroke-width: .6; }
-  #curSpec { fill: #fff; opacity: .92; }
+  #curBody { fill: var(--on-surface); stroke: var(--surface); stroke-width: .7; }
+  .rip { fill: none; stroke: var(--on-surface); pointer-events: none; }
   .tipText { fill: var(--on-liquid); font-weight: 500; font-size: 12px; text-anchor: middle; }
   .rTitle { fill: var(--on-surface); font-weight: 600; font-size: 12.5px; }
   .rBody { fill: var(--on-surface); fill-opacity: .66; font-weight: 400; font-size: 11px; }
@@ -145,25 +142,11 @@
           <rect x="230" y="196" width="220" height="52" rx="16" fill="#000" filter="url(#soft)"/>
         </mask>
         <clipPath id="barClip"><rect x="224" y="190" width="232" height="64" rx="22"/></clipPath>
-        <!-- the pointer: a clear bead of the liquid, nearly transparent at the centre and tinted toward its edge -->
-        <radialGradient id="curGrad" cx=".4" cy=".34" r=".72">
-          <stop offset="0" style="stop-color: var(--liquid)" stop-opacity=".05"/>
-          <stop offset=".62" style="stop-color: var(--liquid)" stop-opacity=".2"/>
-          <stop offset="1" style="stop-color: var(--liquid)" stop-opacity=".62"/>
-        </radialGradient>
-        <radialGradient id="glowGrad">
-          <stop offset="0" style="stop-color: var(--liquid)" stop-opacity=".24"/>
-          <stop offset=".55" style="stop-color: var(--liquid)" stop-opacity=".1"/>
-          <stop offset="1" style="stop-color: var(--liquid)" stop-opacity="0"/>
-        </radialGradient>
         <radialGradient id="numGrad"><stop offset="0" stop-color="#fff"/><stop offset=".55" stop-color="#fff"/><stop offset="1" stop-color="#000"/></radialGradient>
         <mask id="numMask" maskUnits="userSpaceOnUse" x="0" y="0" width="680" height="430"><circle id="numMaskC" r="0" fill="url(#numGrad)"/></mask>
         <mask id="mA" maskUnits="userSpaceOnUse" x="0" y="0" width="680" height="430"><ellipse id="mAe" rx="0" ry="0" fill="url(#numGrad)"/></mask>
         <mask id="mR" maskUnits="userSpaceOnUse" x="0" y="0" width="680" height="430"><ellipse id="mRe" rx="0" ry="0" fill="url(#numGrad)"/></mask>
       </defs>
-
-      <!-- the liquid's own light, seen through the glass; it travels with the pointer drop -->
-      <circle id="glow" r="58" fill="url(#glowGrad)" opacity="0"/>
 
       <g filter="url(#gooW)">
         <path id="bar" class="w"/>
@@ -172,7 +155,11 @@
         <line id="wNeckR" class="wl" stroke-width="0"/>
         <rect id="wTipR" class="w" width="0" height="0"/>
         <rect id="wTipA" class="w" width="0" height="0"/>
-        <ellipse id="wCur" class="w" rx="0" ry="0"/>
+      </g>
+
+      <!-- rings that spread across the surface from wherever the pointer comes to rest -->
+      <g clip-path="url(#barClip)">
+        <circle class="rip" r="0"/><circle class="rip" r="0"/><circle class="rip" r="0"/><circle class="rip" r="0"/><circle class="rip" r="0"/><circle class="rip" r="0"/>
       </g>
 
       <g clip-path="url(#barClip)">
@@ -251,10 +238,9 @@
       <rect id="badge" class="b" width="0" height="0"/>
       <g mask="url(#numMask)"><text id="num" visibility="hidden">3</text></g>
 
-      <!-- the pointer is a drop of the same liquid -->
+      <!-- the pointer is a small ink dot; the surface answers it -->
       <g id="cur" visibility="hidden">
-        <g id="curRot"><circle id="curBody" r="4.6"/></g>
-        <ellipse id="curSpec" cx="-1.65" cy="-1.9" rx="1.25" ry=".78" transform="rotate(-32 -1.65 -1.9)"/>
+        <g id="curRot"><circle id="curBody" r="2.5"/></g>
       </g>
     </svg>
   </div>
@@ -512,7 +498,7 @@
   const el = {
     bar: $('bar'), wDrop: $('wDrop'), wNeck: $('wNeck'), bDrop: $('bDrop'), bNeck: $('bNeck'), bRoot: $('bRoot'),
     wrap: $('blueWrap'), tint: $('tint'), badge: $('badge'), num: $('num'), numMaskC: $('numMaskC'), numBlurFe: $('numBlurFe'),
-    cur: $('cur'), curRot: $('curRot'), wCur: $('wCur'), glow: $('glow'), selOrg: $('selOrg'), selTail: $('selTail'), selHead: $('selHead'), bAct: $('bAct'), actLabel: $('actLabel'),
+    cur: $('cur'), curRot: $('curRot'), rips: [...document.querySelectorAll('.rip')], selOrg: $('selOrg'), selTail: $('selTail'), selHead: $('selHead'), bAct: $('bAct'), actLabel: $('actLabel'),
     icons: [...document.querySelectorAll('.ico')]
   };
   const set = (n, o) => { for (const key in o) n.setAttribute(key, o[key]); };
@@ -626,7 +612,10 @@
   let state = 'empty', mode = null, target = 'none', pending = null, last = null, speed = 1, G = 0, running = false, prev = 0;
   const badge = { anim: false, kind: null, t: 0, T: 0, from: null };
   const ptr = { on: false, x: 0, y: 0, px: 0, py: 0, vx: 0, vy: 0, down: false, hot: 0, sc: 0 };   // the pointer, in stage units
-  const hov = { x: 340, amp: 0 }, glow = { x: 340, y: 222, o: 0 };
+  const hov = { x: 340, amp: 0 };
+  const RING_T = 900, still = { ms: 0, fired: false, x: 0, y: 0 };
+  let rings = [], RT = 0;                                                                  // RT: real time, so rings ignore slow motion
+  function ring(x, y, k) { rings.push({ x, y, k, t0: RT }, { x, y, k: k * .75, t0: RT + 170 }); rings = rings.slice(-6); kick(); }
   let flow = [];                                                                           // ripples left where the selection pools
                                                           // the rise in the edge under the pointer
   const segBtns = [...document.querySelectorAll('.seg button')], btnReplay = $('btnReplay');
@@ -650,15 +639,19 @@
     if (selP.bump > .02) bumps.push({ s: sOfX(selP.mid), A: selP.bump, w: 17 });
     for (const r of flow) rips.push({ s0: r.s0, age: G - r.t0, A: r.A });
     drawBar(bumps, rips); drawBadge(S, mode);
-    set(el.glow, { cx: f(glow.x), cy: f(glow.y), opacity: f(glow.o) });
 
-    const sp = Math.hypot(ptr.vx, ptr.vy), st = 1 + Math.min(.28, sp * .7);
+    const sp = Math.hypot(ptr.vx, ptr.vy), st = 1 + Math.min(.5, sp * .9);
     if (ptr.sc > .02) {
       const a = sp > .01 ? Math.atan2(ptr.vy, ptr.vx) * 180 / Math.PI : 0;
       set(el.cur, { visibility: 'visible', transform: `translate(${f(ptr.x)} ${f(ptr.y)}) scale(${f(ptr.sc)})` });
       el.curRot.setAttribute('transform', `rotate(${f(a)}) scale(${f(st)} ${f(1 / Math.sqrt(st))})`);
     } else el.cur.setAttribute('visibility', 'hidden');
-    ell(el.wCur, { x: ptr.x, y: ptr.y, rx: 4.6 * Math.min(1, ptr.sc), ry: 4.6 * Math.min(1, ptr.sc), rot: 0 }, 0);
+    el.rips.forEach((n, i) => {                       // each ring widens, thins and fades
+      const r = rings[i], age = r ? RT - r.t0 : -1;
+      if (!r || age < 0 || age >= RING_T) { n.setAttribute('r', 0); return; }
+      const q = age / RING_T, e = o3(q);
+      set(n, { cx: f(r.x), cy: f(r.y), r: f(2.5 + 21 * e * r.k), 'stroke-width': f(1.1 * (1 - q) + .25), opacity: f(.3 * r.k * Math.pow(1 - q, 1.6)) });
+    });
   }
 
   function frame(now) {
@@ -667,7 +660,7 @@
     const ease = (cur, to, tau) => cur + (to - cur) * (1 - Math.exp(-rdt / tau));
 
     // pointer drop: stretches along its motion, melts into the action bead; the edge of the bar rises under it
-    const tsc = ptr.on ? (ACT.over ? 0 : ptr.down ? .8 : ptr.hot > 0 ? 1.18 : 1) : 0;   // swells into a lens over anything it can press
+    const tsc = ptr.on ? (ptr.down ? .72 : ptr.hot > 0 || ACT.over ? 1.3 : 1) : 0;   // grows a little over anything it can press
     ptr.sc = ease(ptr.sc, tsc, 70); if (Math.abs(tsc - ptr.sc) > .01) active = true; else ptr.sc = tsc;
     if (rdt > 0) {
       const k = 1 - Math.exp(-rdt / 60);
@@ -679,6 +672,18 @@
     const ta = over ? 4.5 : 0, hx = clamp(ptr.x, X0 + R - 6, X1 - R + 6);
     if (over) { if (hov.amp < .05) hov.x = hx; hov.x = ease(hov.x, hx, 75); if (Math.abs(hx - hov.x) > .05) active = true; }
     hov.amp = ease(hov.amp, ta, 140); if (Math.abs(ta - hov.amp) > .02) active = true; else hov.amp = ta;
+
+    // a ring spreads once the pointer comes to rest on the bar; moving on re-arms it
+    RT += rdt;
+    const spd = Math.hypot(ptr.vx, ptr.vy);
+    if (over) {
+      if (still.fired && Math.hypot(ptr.x - still.x, ptr.y - still.y) > 7) still.fired = false;
+      if (!still.fired) {
+        active = true; still.ms = spd < .02 ? still.ms + rdt : 0;
+        if (still.ms > 130) { still.fired = true; still.ms = 0; still.x = ptr.x; still.y = ptr.y; ring(ptr.x, ptr.y, 1); }
+      }
+    } else { still.ms = 0; still.fired = false; }
+    rings = rings.filter(r => RT - r.t0 < RING_T); if (rings.length) active = true;
 
     const th = ACT.over ? 1 : 0;
     ACT.hov = ease(ACT.hov, th, 90); if (Math.abs(th - ACT.hov) > .01) active = true; else ACT.hov = th;
@@ -696,10 +701,6 @@
     }
     flow = flow.filter(r => G - r.t0 < 420); if (flow.length) active = true;
 
-    // the liquid's light follows the pointer with a little lag
-    const tg = ptr.on ? 1 : 0;
-    glow.o = ease(glow.o, tg, 260); if (Math.abs(tg - glow.o) > .01) active = true; else glow.o = tg;
-    if (ptr.on) { if (glow.o < .03) { glow.x = ptr.x; glow.y = ptr.y; } glow.x = ease(glow.x, ptr.x, 230); glow.y = ease(glow.y, ptr.y, 230); if (Math.hypot(ptr.x - glow.x, ptr.y - glow.y) > .3) active = true; }
 
     if (badge.anim) {
       badge.t += dt; active = true;
@@ -822,7 +823,12 @@
   svg.addEventListener('pointerenter', track);
   svg.addEventListener('pointermove', track);
   svg.addEventListener('pointerleave', () => { ptr.on = false; ptr.hot = 0; ACT.over = false; kick(); });
-  svg.addEventListener('pointerdown', e => { if (e.pointerType !== 'touch') { ptr.down = true; kick(); } });
+  svg.addEventListener('pointerdown', e => {
+    if (e.pointerType === 'touch') return;
+    ptr.down = true;
+    if (ptr.x > X0 && ptr.x < X1 && ptr.y > YT && ptr.y < YT + H) { still.fired = true; still.x = ptr.x; still.y = ptr.y; ring(ptr.x, ptr.y, 1.25); }   // a press sends a stronger ring
+    kick();
+  });
   window.addEventListener('pointerup', () => { if (ptr.down) { ptr.down = false; kick(); } });
 
   // On narrow screens the stage crops in around the bar so it stays a usable size.
