@@ -24,7 +24,7 @@
     --surface: #FFFFFF;
     --on-surface: #1A2640;
     --muted: #A9AFBA;
-    --sel: rgba(26, 38, 64, .07);
+    --sel-o: .075;
     --glass: .52;
     --cur-shadow: rgba(47, 116, 244, .38);
     --liquid: #2F74F4;
@@ -36,14 +36,14 @@
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
       --ground: #0A0F1A; --panel: #0F1626; --line: rgba(230, 237, 248, .13); --ctl: #172033;
-      --ink: #E8EEF8; --ink-soft: #8C98AE; --surface: #F6F9FE; --on-surface: #1A2640; --muted: #A9AFBA; --sel: rgba(26, 38, 64, .09); --glass: .8;
+      --ink: #E8EEF8; --ink-soft: #8C98AE; --surface: #F6F9FE; --on-surface: #1A2640; --muted: #A9AFBA; --sel-o: .1; --glass: .8;
       --liquid: #3F82FF; --on-liquid: #FFFFFF; --shadow: rgba(0, 0, 0, .55);
       color-scheme: dark;
     }
   }
   :root[data-theme="dark"] {
     --ground: #0A0F1A; --panel: #0F1626; --line: rgba(230, 237, 248, .13); --ctl: #172033;
-    --ink: #E8EEF8; --ink-soft: #8C98AE; --surface: #F6F9FE; --on-surface: #1A2640; --muted: #A9AFBA; --sel: rgba(26, 38, 64, .09); --glass: .8;
+    --ink: #E8EEF8; --ink-soft: #8C98AE; --surface: #F6F9FE; --on-surface: #1A2640; --muted: #A9AFBA; --sel-o: .1; --glass: .8;
     --liquid: #3F82FF; --on-liquid: #FFFFFF; --shadow: rgba(0, 0, 0, .55);
     color-scheme: dark;
   }
@@ -82,7 +82,9 @@
   .wl { stroke: var(--surface); stroke-linecap: round; fill: none; }
   .b  { fill: var(--liquid); }
   .bl { stroke: var(--liquid); stroke-linecap: round; fill: none; }
-  #sel { fill: var(--sel); pointer-events: none; }
+  #selWrap { opacity: var(--sel-o); pointer-events: none; }
+  .sf { fill: var(--on-surface); }
+  .sl { stroke: var(--on-surface); stroke-linecap: round; fill: none; }
   .ico { fill: none; stroke: var(--muted); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
   .ico .shape, .ico .detail { transition: fill .25s ease, stroke .25s ease; }
   .ico .shape { fill: transparent; }
@@ -95,8 +97,8 @@
   #num, .tipText, .rTitle, .rBody, .rAct { font-family: var(--ui); pointer-events: none; stroke: none; }
   #num { fill: var(--on-liquid); font-weight: 600; font-size: 10.5px; text-anchor: middle; }
   #badge, #cur, #liq, #blueWrap, #cTipA { pointer-events: none; }
-  #cur { filter: drop-shadow(0 1.6px 2.4px var(--cur-shadow)); }
-  #curBody { fill: url(#curGrad); stroke: var(--liquid); stroke-opacity: .5; stroke-width: .7; }
+  #cur { filter: drop-shadow(0 1.1px 1.8px var(--cur-shadow)); }
+  #curBody { fill: url(#curGrad); stroke: var(--liquid); stroke-opacity: .55; stroke-width: .6; }
   #curSpec { fill: #fff; opacity: .92; }
   .tipText { fill: var(--on-liquid); font-weight: 500; font-size: 12px; text-anchor: middle; }
   .rTitle { fill: var(--on-surface); font-weight: 600; font-size: 12.5px; }
@@ -128,6 +130,10 @@
           <feGaussianBlur in="SourceGraphic" stdDeviation="2.4" result="b"/>
           <feColorMatrix in="b" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 16 -7"/>
         </filter>
+        <filter id="gooS" filterUnits="userSpaceOnUse" x="204" y="170" width="272" height="104" color-interpolation-filters="sRGB">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="b"/>
+          <feColorMatrix in="b" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -8"/>
+        </filter>
         <filter id="soft" filterUnits="userSpaceOnUse" x="150" y="40" width="380" height="310"><feGaussianBlur stdDeviation="3.5"/></filter>
         <filter id="tintBlur" filterUnits="userSpaceOnUse" x="150" y="40" width="380" height="310"><feGaussianBlur stdDeviation="6"/></filter>
         <filter id="numBlur" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur id="numBlurFe" stdDeviation="0"/></filter>
@@ -146,7 +152,7 @@
           <stop offset="1" style="stop-color: var(--liquid)" stop-opacity=".62"/>
         </radialGradient>
         <radialGradient id="glowGrad">
-          <stop offset="0" style="stop-color: var(--liquid)" stop-opacity=".3"/>
+          <stop offset="0" style="stop-color: var(--liquid)" stop-opacity=".24"/>
           <stop offset=".55" style="stop-color: var(--liquid)" stop-opacity=".1"/>
           <stop offset="1" style="stop-color: var(--liquid)" stop-opacity="0"/>
         </radialGradient>
@@ -157,7 +163,7 @@
       </defs>
 
       <!-- the liquid's own light, seen through the glass; it travels with the pointer drop -->
-      <circle id="glow" r="92" fill="url(#glowGrad)" opacity="0"/>
+      <circle id="glow" r="58" fill="url(#glowGrad)" opacity="0"/>
 
       <g filter="url(#gooW)">
         <path id="bar" class="w"/>
@@ -173,7 +179,13 @@
         <ellipse id="tint" class="b" rx="17" ry="9" opacity="0" filter="url(#tintBlur)"/>
       </g>
 
-      <rect id="sel" width="54" height="48" rx="14"/>
+      <g id="selWrap">
+        <g filter="url(#gooS)">
+          <rect id="selOrg" class="sf" width="0" height="0"/>
+          <line id="selTail" class="sl" stroke-width="0"/>
+          <rect id="selHead" class="sf" width="0" height="0"/>
+        </g>
+      </g>
 
       <g id="home" class="ico anchor on" data-x="259" role="button" tabindex="0" aria-label="Home" aria-describedby="richTip">
         <rect class="hit" x="-15" y="-20" width="54" height="64"/>
@@ -241,8 +253,8 @@
 
       <!-- the pointer is a drop of the same liquid -->
       <g id="cur" visibility="hidden">
-        <g id="curRot"><circle id="curBody" r="7.5"/></g>
-        <ellipse id="curSpec" cx="-2.7" cy="-3.1" rx="2" ry="1.25" transform="rotate(-32 -2.7 -3.1)"/>
+        <g id="curRot"><circle id="curBody" r="4.6"/></g>
+        <ellipse id="curSpec" cx="-1.65" cy="-1.9" rx="1.25" ry=".78" transform="rotate(-32 -1.65 -1.9)"/>
       </g>
     </svg>
   </div>
@@ -500,7 +512,7 @@
   const el = {
     bar: $('bar'), wDrop: $('wDrop'), wNeck: $('wNeck'), bDrop: $('bDrop'), bNeck: $('bNeck'), bRoot: $('bRoot'),
     wrap: $('blueWrap'), tint: $('tint'), badge: $('badge'), num: $('num'), numMaskC: $('numMaskC'), numBlurFe: $('numBlurFe'),
-    cur: $('cur'), curRot: $('curRot'), wCur: $('wCur'), glow: $('glow'), bAct: $('bAct'), actLabel: $('actLabel'), sel: $('sel'),
+    cur: $('cur'), curRot: $('curRot'), wCur: $('wCur'), glow: $('glow'), selOrg: $('selOrg'), selTail: $('selTail'), selHead: $('selHead'), bAct: $('bAct'), actLabel: $('actLabel'),
     icons: [...document.querySelectorAll('.ico')]
   };
   const set = (n, o) => { for (const key in o) n.setAttribute(key, o[key]); };
@@ -520,7 +532,23 @@
     set(n, { x: f(b.x - w / 2), y: f(b.y - h / 2), width: f(w), height: f(h), rx: f(clamp(b.rx + pad, 0, Math.min(w, h) / 2)) });
   }
 
-  const sel = { key: 'home', l: 232, r: 286, moved: false };
+  const SEL_T = 440;
+  const sel = { key: 'home', x: 259, t: -1, fx: 259, fw: 54, fh: 48 };
+  function selPose() {
+    if (sel.t < 0) return { head: { x: sel.x, w: 54, h: 48, rx: 14 }, org: null, tail: null, bump: 0 };
+    const t = sel.t, tx = +$(sel.key).dataset.x, p = c01(t, 40, 230);
+    const v = (io(Math.min(1, p + .04)) - io(Math.max(0, p - .04))) / .24;          // 0..1, how fast the head is moving
+    const hx = mix(sel.fx, tx, io(p)), grow = o3(c01(t, 215, SEL_T));               // darts, then pools into the plate
+    const head = { x: hx, w: mix(20 * (1 + .55 * v), 54, grow), h: mix(20 * (1 - .2 * v), 48, grow), rx: mix(10, 14, grow) };
+    const drain = io(c01(t, 20, 250)), ow = sel.fw * (1 - drain), oh = sel.fh * (1 - drain);
+    const ox = sel.fx + Math.sign(tx - sel.fx) * 12 * drain;
+    return {
+      head,
+      org: ow > .5 ? { x: ox, w: ow, h: oh, rx: Math.min(14, ow / 2, oh / 2) } : null,
+      tail: { x1: ox, x2: hx, w: kf(t, [[0, 10], [110, 6], [240, 4.6], [300, 0]]) },   // the stream between them thins, then lets go
+      bump: 3.2 * Math.sin(Math.PI * c01(t, 0, 320))
+    };
+  }
   function drawBar(bumps, rips) {
     let d = '';
     for (let i = 0; i < N; i++) { const p = PTS[i], v = disp(p.s, bumps, rips); d += (i ? 'L' : 'M') + f(p.x + p.nx * v) + ' ' + f(p.y + p.ny * v); }
@@ -529,8 +557,10 @@
       const x = +g.dataset.x, dy = -.3 * disp(sOfX(x), bumps, rips);
       g.setAttribute('transform', `translate(${f(x - 12)} ${f(YC - 12 + dy)})`);
     }
-    const sw = sel.r - sel.l, sh = 48 * Math.pow(54 / sw, .36), sx = (sel.l + sel.r) / 2;
-    set(el.sel, { x: f(sel.l), y: f(YC - sh / 2 - .3 * disp(sOfX(sx), bumps, rips)), width: f(sw), height: f(sh), rx: f(Math.min(14, sh / 2)) });
+    const sp = selPose(), yAt = x => YC - .3 * disp(sOfX(x), bumps, rips);
+    rect(el.selHead, { x: sp.head.x, y: yAt(sp.head.x), w: sp.head.w, h: sp.head.h, rx: sp.head.rx }, 0);
+    rect(el.selOrg, sp.org ? { x: sp.org.x, y: yAt(sp.org.x), w: sp.org.w, h: sp.org.h, rx: sp.org.rx } : null, 0);
+    line(el.selTail, sp.tail && sp.tail.w > .1 ? { x1: sp.tail.x1, y1: yAt(sp.tail.x1), x2: sp.tail.x2, y2: yAt(sp.tail.x2), w: sp.tail.w } : null);
   }
 
   function drawBadge(S, m) {
@@ -611,8 +641,8 @@
     }
     if (ACT.t >= 0) bumps.push({ s: sOfX(ACT.dropX), A: kf(ACT.t, [[330, 0], [410, 2.2], [470, -2.8], [560, 1.2], [680, 0]]), w: 11 });
     if (hov.amp > .01) bumps.push({ s: sOfX(hov.x), A: hov.amp, w: 17 });
-    const stretch = (sel.r - sel.l - 54) / 54;        // while the selection flows, the edge above it swells and travels with it
-    if (stretch > .02) bumps.push({ s: sOfX((sel.l + sel.r) / 2), A: Math.min(3.6, stretch * 3.4), w: 18 });
+    const selP = selPose();                           // while the selection darts, the edge above its head swells and travels with it
+    if (selP.bump > .02) bumps.push({ s: sOfX(selP.head.x), A: selP.bump, w: 15 });
     for (const r of flow) rips.push({ s0: r.s0, age: G - r.t0, A: r.A });
     drawBar(bumps, rips); drawBadge(S, mode);
     set(el.glow, { cx: f(glow.x), cy: f(glow.y), opacity: f(glow.o) });
@@ -623,7 +653,7 @@
       set(el.cur, { visibility: 'visible', transform: `translate(${f(ptr.x)} ${f(ptr.y)}) scale(${f(ptr.sc)})` });
       el.curRot.setAttribute('transform', `rotate(${f(a)}) scale(${f(st)} ${f(1 / Math.sqrt(st))})`);
     } else el.cur.setAttribute('visibility', 'hidden');
-    ell(el.wCur, { x: ptr.x, y: ptr.y, rx: 5.5 * Math.min(1, ptr.sc), ry: 5.5 * Math.min(1, ptr.sc), rot: 0 }, 0);
+    ell(el.wCur, { x: ptr.x, y: ptr.y, rx: 4.6 * Math.min(1, ptr.sc), ry: 4.6 * Math.min(1, ptr.sc), rot: 0 }, 0);
   }
 
   function frame(now) {
@@ -632,7 +662,7 @@
     const ease = (cur, to, tau) => cur + (to - cur) * (1 - Math.exp(-rdt / tau));
 
     // pointer drop: stretches along its motion, melts into the action bead; the edge of the bar rises under it
-    const tsc = ptr.on ? (ACT.over ? 0 : ptr.down ? .8 : ptr.hot > 0 ? 1.25 : 1) : 0;   // swells into a lens over anything it can press
+    const tsc = ptr.on ? (ACT.over ? 0 : ptr.down ? .8 : ptr.hot > 0 ? 1.18 : 1) : 0;   // swells into a lens over anything it can press
     ptr.sc = ease(ptr.sc, tsc, 70); if (Math.abs(tsc - ptr.sc) > .01) active = true; else ptr.sc = tsc;
     if (rdt > 0) {
       const k = 1 - Math.exp(-rdt / 60);
@@ -654,11 +684,11 @@
       if (ACT.t >= ACT.T) ACT.t = -1;
     }
 
-    const sx = +$(sel.key).dataset.x, tl = sx - 27, tr = sx + 27, dir = (tl + tr) - (sel.l + sel.r);
-    if (Math.abs(tl - sel.l) > .05 || Math.abs(tr - sel.r) > .05) {
-      const kl = 1 - Math.exp(-dt / (dir < 0 ? 75 : 210)), kr = 1 - Math.exp(-dt / (dir > 0 ? 75 : 210));
-      sel.l += (tl - sel.l) * kl; sel.r += (tr - sel.r) * kr; sel.moved = true; active = true;
-    } else if (sel.moved) { sel.l = tl; sel.r = tr; sel.moved = false; flow.push({ s0: sOfX(sx), t0: G, A: 1.1 }); active = true; }
+    if (sel.t >= 0) {
+      const before = sel.t; sel.t += dt; active = true;
+      if (before < 240 && sel.t >= 240) flow.push({ s0: sOfX(+$(sel.key).dataset.x), t0: G, A: 1.2 });
+      if (sel.t >= SEL_T) { sel.t = -1; sel.x = +$(sel.key).dataset.x; }
+    }
     flow = flow.filter(r => G - r.t0 < 420); if (flow.length) active = true;
 
     // the liquid's light follows the pointer with a little lag
@@ -721,12 +751,16 @@
   $('btnReset').addEventListener('click', () => {
     badge.anim = false; pending = null; state = 'empty'; mode = null; target = 'none'; last = null;
     for (const tp of TIPS) { clearTimeout(tp.timer); tp.want = false; tp.block = false; tp.p = 0; tp.rips = []; }
-    ACT.t = -1; select('home'); sel.l = 232; sel.r = 286; sel.moved = false; flow = []; syncUI(); kick();
+    ACT.t = -1; select('home'); sel.t = -1; sel.x = 259; flow = []; syncUI(); kick();
   });
   $('slow').addEventListener('change', e => { speed = e.target.checked ? .25 : 1; });
 
   /* ---------- nav selection ---------- */
-  function select(key) { sel.key = key; for (const g of el.icons) g.classList.toggle('on', g.id === key); kick(); }
+  function select(key) {
+    if (key !== sel.key) { const h = selPose().head; Object.assign(sel, { fx: h.x, fw: h.w, fh: h.h, key, t: 0 }); }   // a new pick mid-flight leaves from wherever the head is
+    for (const g of el.icons) g.classList.toggle('on', g.id === key);
+    kick();
+  }
   for (const id of ['home', 'msg', 'fav', 'prof']) {
     const g = $(id), pick = () => { select(id); if (id === 'msg') request('none'); };   // opening Messages clears its badge
     g.addEventListener('click', pick);
