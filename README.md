@@ -9,6 +9,6 @@ Five sets. Each set is one badge and one tooltip that share a tone.
 | 2 | Ethereal | Fluid Interface | [Open](https://dakotashao.github.io/adv_interface_wk02/ethereal/) |
 | 3 | Playful | Notifications Pile Up | [Open](https://dakotashao.github.io/adv_interface_wk02/playful/) |
 | 4 | Nostalgic | Resolving Data | [Open](https://dakotashao.github.io/adv_interface_wk02/nostalgic/) |
-| 5 | | | |
+| 5 | Playful | Reading Pile | [Open](https://dakotashao.github.io/adv_interface_wk02/playful-reading/) |
 
 Each set lives in its own folder with a self-contained `index.html`.
