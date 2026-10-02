@@ -147,8 +147,8 @@
         </mask>
         <clipPath id="barClip"><rect x="224" y="190" width="232" height="64" rx="22"/></clipPath>
         <radialGradient id="glowGrad">
-          <stop offset="0" style="stop-color: var(--liquid)" stop-opacity=".2"/>
-          <stop offset=".5" style="stop-color: var(--liquid)" stop-opacity=".08"/>
+          <stop offset="0" style="stop-color: var(--liquid)" stop-opacity=".13"/>
+          <stop offset=".5" style="stop-color: var(--liquid)" stop-opacity=".05"/>
           <stop offset="1" style="stop-color: var(--liquid)" stop-opacity="0"/>
         </radialGradient>
         <radialGradient id="numGrad"><stop offset="0" stop-color="#fff"/><stop offset=".55" stop-color="#fff"/><stop offset="1" stop-color="#000"/></radialGradient>
@@ -168,7 +168,7 @@
 
       <!-- the pointer, inside the bar only: a small pool of the liquid's light under the surface -->
       <g clip-path="url(#barClip)">
-        <circle id="glow" r="24" fill="url(#glowGrad)" opacity="0"/>
+        <circle id="glow" r="16" fill="url(#glowGrad)" opacity="0"/>
       </g>
 
       <g clip-path="url(#barClip)">
