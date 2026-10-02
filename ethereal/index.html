@@ -101,7 +101,6 @@
   .rTitle { fill: var(--on-surface); font-weight: 600; font-size: 12.5px; }
   .rBody { fill: var(--on-surface); fill-opacity: .66; font-weight: 400; font-size: 11px; }
   .rAct { fill: var(--on-liquid); font-weight: 600; font-size: 11px; text-anchor: middle; }
-  @media (hover: hover) and (pointer: fine) { #stage, #stage .anchor { cursor: none; } }
 </style>
 </head>
 <body>
@@ -641,11 +640,7 @@
     drawBar(bumps, rips); drawBadge(S, mode);
 
     const sp = Math.hypot(ptr.vx, ptr.vy), st = 1 + Math.min(.5, sp * .9);
-    if (ptr.sc > .02) {
-      const a = sp > .01 ? Math.atan2(ptr.vy, ptr.vx) * 180 / Math.PI : 0;
-      set(el.cur, { visibility: 'visible', transform: `translate(${f(ptr.x)} ${f(ptr.y)}) scale(${f(ptr.sc)})` });
-      el.curRot.setAttribute('transform', `rotate(${f(a)}) scale(${f(st)} ${f(1 / Math.sqrt(st))})`);
-    } else el.cur.setAttribute('visibility', 'hidden');
+    el.cur.setAttribute('visibility', 'hidden');
     el.rips.forEach((n, i) => {                       // each ring widens, thins and fades
       const r = rings[i], age = r ? RT - r.t0 : -1;
       if (!r || age < 0 || age >= RING_T) { n.setAttribute('r', 0); return; }
@@ -680,7 +675,7 @@
       if (still.fired && Math.hypot(ptr.x - still.x, ptr.y - still.y) > 7) still.fired = false;
       if (!still.fired) {
         active = true; still.ms = spd < .02 ? still.ms + rdt : 0;
-        if (still.ms > 130) { still.fired = true; still.ms = 0; still.x = ptr.x; still.y = ptr.y; ring(ptr.x, ptr.y, 1); }
+        if (still.ms > 130) { still.fired = true; still.ms = 0; still.x = ptr.x; still.y = ptr.y; }
       }
     } else { still.ms = 0; still.fired = false; }
     rings = rings.filter(r => RT - r.t0 < RING_T); if (rings.length) active = true;
@@ -826,7 +821,6 @@
   svg.addEventListener('pointerdown', e => {
     if (e.pointerType === 'touch') return;
     ptr.down = true;
-    if (ptr.x > X0 && ptr.x < X1 && ptr.y > YT && ptr.y < YT + H) { still.fired = true; still.x = ptr.x; still.y = ptr.y; ring(ptr.x, ptr.y, 1.25); }   // a press sends a stronger ring
     kick();
   });
   window.addEventListener('pointerup', () => { if (ptr.down) { ptr.down = false; kick(); } });
