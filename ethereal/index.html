@@ -27,8 +27,6 @@
     --sel: rgba(26, 38, 64, .07);
     --glass: .52;
     --cur-shadow: rgba(47, 116, 244, .38);
-    --glow-a: rgba(47, 116, 244, .20);
-    --glow-b: rgba(255, 166, 120, .18);
     --liquid: #2F74F4;
     --on-liquid: #FFFFFF;
     --shadow: rgba(38, 66, 128, .16);
@@ -38,14 +36,14 @@
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
       --ground: #0A0F1A; --panel: #0F1626; --line: rgba(230, 237, 248, .13); --ctl: #172033;
-      --ink: #E8EEF8; --ink-soft: #8C98AE; --surface: #F6F9FE; --on-surface: #1A2640; --muted: #A9AFBA; --sel: rgba(26, 38, 64, .09); --glass: .8; --glow-a: rgba(63, 130, 255, .30); --glow-b: rgba(255, 150, 110, .14);
+      --ink: #E8EEF8; --ink-soft: #8C98AE; --surface: #F6F9FE; --on-surface: #1A2640; --muted: #A9AFBA; --sel: rgba(26, 38, 64, .09); --glass: .8;
       --liquid: #3F82FF; --on-liquid: #FFFFFF; --shadow: rgba(0, 0, 0, .55);
       color-scheme: dark;
     }
   }
   :root[data-theme="dark"] {
     --ground: #0A0F1A; --panel: #0F1626; --line: rgba(230, 237, 248, .13); --ctl: #172033;
-    --ink: #E8EEF8; --ink-soft: #8C98AE; --surface: #F6F9FE; --on-surface: #1A2640; --muted: #A9AFBA; --sel: rgba(26, 38, 64, .09); --glass: .8; --glow-a: rgba(63, 130, 255, .30); --glow-b: rgba(255, 150, 110, .14);
+    --ink: #E8EEF8; --ink-soft: #8C98AE; --surface: #F6F9FE; --on-surface: #1A2640; --muted: #A9AFBA; --sel: rgba(26, 38, 64, .09); --glass: .8;
     --liquid: #3F82FF; --on-liquid: #FFFFFF; --shadow: rgba(0, 0, 0, .55);
     color-scheme: dark;
   }
@@ -58,13 +56,8 @@
     padding-inline: clamp(16px, 2.4vw, 32px); padding-block: clamp(16px, 2.4vw, 32px);
     display: grid; gap: clamp(16px, 2.4vw, 26px);
   }
-  .frame {
-    border: 1px solid var(--line); border-radius: clamp(22px, 4vw, 40px); overflow: hidden; min-width: 0;
-    background:
-      radial-gradient(34% 46% at 66% 60%, var(--glow-a), transparent 72%),
-      radial-gradient(30% 42% at 36% 42%, var(--glow-b), transparent 72%),
-      var(--panel);
-  }
+  .frame { border: 1px solid var(--line); border-radius: clamp(22px, 4vw, 40px); background: var(--panel); overflow: hidden; min-width: 0; }
+  #glow { pointer-events: none; }
   .frame svg { display: block; width: 100%; height: auto; }
 
   .controls { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
@@ -152,11 +145,19 @@
           <stop offset=".62" style="stop-color: var(--liquid)" stop-opacity=".2"/>
           <stop offset="1" style="stop-color: var(--liquid)" stop-opacity=".62"/>
         </radialGradient>
+        <radialGradient id="glowGrad">
+          <stop offset="0" style="stop-color: var(--liquid)" stop-opacity=".3"/>
+          <stop offset=".55" style="stop-color: var(--liquid)" stop-opacity=".1"/>
+          <stop offset="1" style="stop-color: var(--liquid)" stop-opacity="0"/>
+        </radialGradient>
         <radialGradient id="numGrad"><stop offset="0" stop-color="#fff"/><stop offset=".55" stop-color="#fff"/><stop offset="1" stop-color="#000"/></radialGradient>
         <mask id="numMask" maskUnits="userSpaceOnUse" x="0" y="0" width="680" height="430"><circle id="numMaskC" r="0" fill="url(#numGrad)"/></mask>
         <mask id="mA" maskUnits="userSpaceOnUse" x="0" y="0" width="680" height="430"><ellipse id="mAe" rx="0" ry="0" fill="url(#numGrad)"/></mask>
         <mask id="mR" maskUnits="userSpaceOnUse" x="0" y="0" width="680" height="430"><ellipse id="mRe" rx="0" ry="0" fill="url(#numGrad)"/></mask>
       </defs>
+
+      <!-- the liquid's own light, seen through the glass; it travels with the pointer drop -->
+      <circle id="glow" r="92" fill="url(#glowGrad)" opacity="0"/>
 
       <g filter="url(#gooW)">
         <path id="bar" class="w"/>
@@ -499,7 +500,7 @@
   const el = {
     bar: $('bar'), wDrop: $('wDrop'), wNeck: $('wNeck'), bDrop: $('bDrop'), bNeck: $('bNeck'), bRoot: $('bRoot'),
     wrap: $('blueWrap'), tint: $('tint'), badge: $('badge'), num: $('num'), numMaskC: $('numMaskC'), numBlurFe: $('numBlurFe'),
-    cur: $('cur'), curRot: $('curRot'), wCur: $('wCur'), bAct: $('bAct'), actLabel: $('actLabel'), sel: $('sel'),
+    cur: $('cur'), curRot: $('curRot'), wCur: $('wCur'), glow: $('glow'), bAct: $('bAct'), actLabel: $('actLabel'), sel: $('sel'),
     icons: [...document.querySelectorAll('.ico')]
   };
   const set = (n, o) => { for (const key in o) n.setAttribute(key, o[key]); };
@@ -519,7 +520,7 @@
     set(n, { x: f(b.x - w / 2), y: f(b.y - h / 2), width: f(w), height: f(h), rx: f(clamp(b.rx + pad, 0, Math.min(w, h) / 2)) });
   }
 
-  const sel = { key: 'home', x: 259 };
+  const sel = { key: 'home', l: 232, r: 286, moved: false };
   function drawBar(bumps, rips) {
     let d = '';
     for (let i = 0; i < N; i++) { const p = PTS[i], v = disp(p.s, bumps, rips); d += (i ? 'L' : 'M') + f(p.x + p.nx * v) + ' ' + f(p.y + p.ny * v); }
@@ -528,7 +529,8 @@
       const x = +g.dataset.x, dy = -.3 * disp(sOfX(x), bumps, rips);
       g.setAttribute('transform', `translate(${f(x - 12)} ${f(YC - 12 + dy)})`);
     }
-    set(el.sel, { x: f(sel.x - 27), y: f(YC - 24 - .3 * disp(sOfX(sel.x), bumps, rips)) });
+    const sw = sel.r - sel.l, sh = 48 * Math.pow(54 / sw, .36), sx = (sel.l + sel.r) / 2;
+    set(el.sel, { x: f(sel.l), y: f(YC - sh / 2 - .3 * disp(sOfX(sx), bumps, rips)), width: f(sw), height: f(sh), rx: f(Math.min(14, sh / 2)) });
   }
 
   function drawBadge(S, m) {
@@ -589,7 +591,9 @@
   let state = 'empty', mode = null, target = 'none', pending = null, last = null, speed = 1, G = 0, running = false, prev = 0;
   const badge = { anim: false, kind: null, t: 0, T: 0, from: null };
   const ptr = { on: false, x: 0, y: 0, px: 0, py: 0, vx: 0, vy: 0, down: false, hot: 0, sc: 0 };   // the pointer, in stage units
-  const hov = { x: 340, amp: 0 };                                                          // the rise in the edge under the pointer
+  const hov = { x: 340, amp: 0 }, glow = { x: 340, y: 222, o: 0 };
+  let flow = [];                                                                           // ripples left where the selection pools
+                                                          // the rise in the edge under the pointer
   const segBtns = [...document.querySelectorAll('.seg button')], btnReplay = $('btnReplay');
 
   function syncUI() {
@@ -607,7 +611,11 @@
     }
     if (ACT.t >= 0) bumps.push({ s: sOfX(ACT.dropX), A: kf(ACT.t, [[330, 0], [410, 2.2], [470, -2.8], [560, 1.2], [680, 0]]), w: 11 });
     if (hov.amp > .01) bumps.push({ s: sOfX(hov.x), A: hov.amp, w: 17 });
+    const stretch = (sel.r - sel.l - 54) / 54;        // while the selection flows, the edge above it swells and travels with it
+    if (stretch > .02) bumps.push({ s: sOfX((sel.l + sel.r) / 2), A: Math.min(3.6, stretch * 3.4), w: 18 });
+    for (const r of flow) rips.push({ s0: r.s0, age: G - r.t0, A: r.A });
     drawBar(bumps, rips); drawBadge(S, mode);
+    set(el.glow, { cx: f(glow.x), cy: f(glow.y), opacity: f(glow.o) });
 
     const sp = Math.hypot(ptr.vx, ptr.vy), st = 1 + Math.min(.28, sp * .7);
     if (ptr.sc > .02) {
@@ -646,8 +654,17 @@
       if (ACT.t >= ACT.T) ACT.t = -1;
     }
 
-    const sx = +$(sel.key).dataset.x;
-    sel.x = ease(sel.x, sx, 90); if (Math.abs(sx - sel.x) > .05) active = true; else sel.x = sx;
+    const sx = +$(sel.key).dataset.x, tl = sx - 27, tr = sx + 27, dir = (tl + tr) - (sel.l + sel.r);
+    if (Math.abs(tl - sel.l) > .05 || Math.abs(tr - sel.r) > .05) {
+      const kl = 1 - Math.exp(-dt / (dir < 0 ? 75 : 210)), kr = 1 - Math.exp(-dt / (dir > 0 ? 75 : 210));
+      sel.l += (tl - sel.l) * kl; sel.r += (tr - sel.r) * kr; sel.moved = true; active = true;
+    } else if (sel.moved) { sel.l = tl; sel.r = tr; sel.moved = false; flow.push({ s0: sOfX(sx), t0: G, A: 1.1 }); active = true; }
+    flow = flow.filter(r => G - r.t0 < 420); if (flow.length) active = true;
+
+    // the liquid's light follows the pointer with a little lag
+    const tg = ptr.on ? 1 : 0;
+    glow.o = ease(glow.o, tg, 260); if (Math.abs(tg - glow.o) > .01) active = true; else glow.o = tg;
+    if (ptr.on) { if (glow.o < .03) { glow.x = ptr.x; glow.y = ptr.y; } glow.x = ease(glow.x, ptr.x, 230); glow.y = ease(glow.y, ptr.y, 230); if (Math.hypot(ptr.x - glow.x, ptr.y - glow.y) > .3) active = true; }
 
     if (badge.anim) {
       badge.t += dt; active = true;
@@ -704,7 +721,7 @@
   $('btnReset').addEventListener('click', () => {
     badge.anim = false; pending = null; state = 'empty'; mode = null; target = 'none'; last = null;
     for (const tp of TIPS) { clearTimeout(tp.timer); tp.want = false; tp.block = false; tp.p = 0; tp.rips = []; }
-    ACT.t = -1; select('home'); syncUI(); kick();
+    ACT.t = -1; select('home'); sel.l = 232; sel.r = 286; sel.moved = false; flow = []; syncUI(); kick();
   });
   $('slow').addEventListener('change', e => { speed = e.target.checked ? .25 : 1; });
 
