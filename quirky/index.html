@@ -716,8 +716,8 @@ h2 { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: -0.005em; }
   // Leaving: the tooltip strains under its own weight, lets go of the bar and falls away as one piece,
   // tipping as it goes. Relieved, the bar springs up where it hung and rings. More information, bigger spring.
   const EXITS = {
-    plain: { strain: 90,  sag: 5,  fall: 360, dist: 130, tilt: -8, kick: 1.6, ring: 420 },
-    rich:  { strain: 150, sag: 14, fall: 480, dist: 190, tilt: 5,  kick: 5,   ring: 580 }
+    plain: { strain: 80,  sag: 2,  fall: 300, dist: 34,  tilt: -3, kick: 0.8, ring: 360 },
+    rich:  { strain: 120, sag: 5,  fall: 360, dist: 56,  tilt: 2,  kick: 2,   ring: 460 }
   };
   const reboundShape = (u, ring) => Math.sin(TAU * u * ring / 190) * Math.exp(-3 * u) * (1 - u);
   Object.values(EXITS).forEach(e => { e.norm = peakOf(u => reboundShape(u, e.ring)); });
@@ -745,7 +745,7 @@ h2 { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: -0.005em; }
         const f = tau / e.fall;
         paintTip(kind, e.sag * Math.max(0, 1 - tau / 110), false);  // let go, the container relaxes to its own shape
         inner.style.transform = `translateY(${(e.dist * f * f).toFixed(2)}px) rotate(${(e.tilt * f).toFixed(2)}deg)`;   // gravity
-        tip.style.opacity = f < 0.5 ? 1 : Math.max(0, 1 - (f - 0.5) / 0.5);
+        tip.style.opacity = f < 0.3 ? 1 : Math.max(0, 1 - (f - 0.3) / 0.7);   // a short drop, gone before it travels far
       } else if (!tip.hidden) {
         finish();
       }
