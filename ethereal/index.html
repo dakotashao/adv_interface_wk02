@@ -131,8 +131,8 @@
           <feColorMatrix in="b" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 16 -7"/>
         </filter>
         <filter id="gooS" filterUnits="userSpaceOnUse" x="204" y="170" width="272" height="104" color-interpolation-filters="sRGB">
-          <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="b"/>
-          <feColorMatrix in="b" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -8"/>
+          <feGaussianBlur in="SourceGraphic" stdDeviation="4.5" result="b"/>
+          <feColorMatrix in="b" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -8.3"/>
         </filter>
         <filter id="soft" filterUnits="userSpaceOnUse" x="150" y="40" width="380" height="310"><feGaussianBlur stdDeviation="3.5"/></filter>
         <filter id="tintBlur" filterUnits="userSpaceOnUse" x="150" y="40" width="380" height="310"><feGaussianBlur stdDeviation="6"/></filter>
@@ -532,21 +532,26 @@
     set(n, { x: f(b.x - w / 2), y: f(b.y - h / 2), width: f(w), height: f(h), rx: f(clamp(b.rx + pad, 0, Math.min(w, h) / 2)) });
   }
 
-  const SEL_T = 440;
-  const sel = { key: 'home', x: 259, t: -1, fx: 259, fw: 54, fh: 48 };
+  // Selection: one fat body of liquid. It leans back, the front lobe flows to the new icon while the rear lobe
+  // drains after it through a thick waist, and it overshoots and settles into the plate on arrival.
+  const SEL_T = 620;
+  const sel = { key: 'home', x: 259, t: -1, fx: 259 };
   function selPose() {
-    if (sel.t < 0) return { head: { x: sel.x, w: 54, h: 48, rx: 14 }, org: null, tail: null, bump: 0 };
-    const t = sel.t, tx = +$(sel.key).dataset.x, p = c01(t, 40, 230);
-    const v = (io(Math.min(1, p + .04)) - io(Math.max(0, p - .04))) / .24;          // 0..1, how fast the head is moving
-    const hx = mix(sel.fx, tx, io(p)), grow = o3(c01(t, 215, SEL_T));               // darts, then pools into the plate
-    const head = { x: hx, w: mix(20 * (1 + .55 * v), 54, grow), h: mix(20 * (1 - .2 * v), 48, grow), rx: mix(10, 14, grow) };
-    const drain = io(c01(t, 20, 250)), ow = sel.fw * (1 - drain), oh = sel.fh * (1 - drain);
-    const ox = sel.fx + Math.sign(tx - sel.fx) * 12 * drain;
+    if (sel.t < 0) return { b: { x: sel.x, w: 54, h: 48, rx: 14 }, a: null, neck: null, bump: 0, mid: sel.x };
+    const t = sel.t, tx = +$(sel.key).dataset.x, dir = Math.sign(tx - sel.fx) || 1;
+    const lead = io(c01(t, 90, 330)), trail = io(c01(t, 190, 450));
+    const wind = Math.sin(Math.PI * c01(t, 0, 170));                       // leans away before it lets go
+    const q = c01(t, 420, SEL_T), wob = Math.sin(q * Math.PI * 2) * (1 - q) * (1 - q);   // overshoot, then rest
+    const bx = mix(sel.fx, tx, lead) - dir * 4 * wind * (1 - lead) + dir * 5 * wob;
+    const ax = mix(sel.fx, tx, trail) - dir * 6 * wind * (1 - trail);
+    const sep = Math.abs(bx - ax), k = c01(sep, 0, 34);                     // how far the two lobes have pulled apart
+    const bs = mix(1, .74 + .26 * trail, k), as = mix(1, 1 - .34 * lead, k);
+    const round = Math.max(k, Math.sin(Math.PI * c01(t, 0, SEL_T)) * .8);   // rounds up while it moves, squares off at rest
     return {
-      head,
-      org: ow > .5 ? { x: ox, w: ow, h: oh, rx: Math.min(14, ow / 2, oh / 2) } : null,
-      tail: { x1: ox, x2: hx, w: kf(t, [[0, 10], [110, 6], [240, 4.6], [300, 0]]) },   // the stream between them thins, then lets go
-      bump: 3.2 * Math.sin(Math.PI * c01(t, 0, 320))
+      b: { x: bx, w: mix(54, 42, k) * bs + 8 * wob + 5 * wind * (1 - k), h: mix(48, 42, k) * bs - 6 * wob - 3 * wind * (1 - k), rx: mix(14, 21, round) },
+      a: k > .02 ? { x: ax, w: mix(54, 42, k) * as, h: mix(48, 42, k) * as, rx: mix(14, 21, round) } : null,
+      neck: k > .02 ? { x1: ax, x2: bx, w: clamp(22 - .07 * sep, 11, 22) * Math.min(1, k * 1.6) } : null,
+      bump: 3.2 * Math.sin(Math.PI * c01(t, 60, 470)), mid: (ax + bx) / 2
     };
   }
   function drawBar(bumps, rips) {
@@ -558,9 +563,9 @@
       g.setAttribute('transform', `translate(${f(x - 12)} ${f(YC - 12 + dy)})`);
     }
     const sp = selPose(), yAt = x => YC - .3 * disp(sOfX(x), bumps, rips);
-    rect(el.selHead, { x: sp.head.x, y: yAt(sp.head.x), w: sp.head.w, h: sp.head.h, rx: sp.head.rx }, 0);
-    rect(el.selOrg, sp.org ? { x: sp.org.x, y: yAt(sp.org.x), w: sp.org.w, h: sp.org.h, rx: sp.org.rx } : null, 0);
-    line(el.selTail, sp.tail && sp.tail.w > .1 ? { x1: sp.tail.x1, y1: yAt(sp.tail.x1), x2: sp.tail.x2, y2: yAt(sp.tail.x2), w: sp.tail.w } : null);
+    rect(el.selHead, { x: sp.b.x, y: yAt(sp.b.x), w: sp.b.w, h: sp.b.h, rx: sp.b.rx }, 0);
+    rect(el.selOrg, sp.a ? { x: sp.a.x, y: yAt(sp.a.x), w: sp.a.w, h: sp.a.h, rx: sp.a.rx } : null, 0);
+    line(el.selTail, sp.neck ? { x1: sp.neck.x1, y1: yAt(sp.neck.x1), x2: sp.neck.x2, y2: yAt(sp.neck.x2), w: sp.neck.w } : null);
   }
 
   function drawBadge(S, m) {
@@ -641,8 +646,8 @@
     }
     if (ACT.t >= 0) bumps.push({ s: sOfX(ACT.dropX), A: kf(ACT.t, [[330, 0], [410, 2.2], [470, -2.8], [560, 1.2], [680, 0]]), w: 11 });
     if (hov.amp > .01) bumps.push({ s: sOfX(hov.x), A: hov.amp, w: 17 });
-    const selP = selPose();                           // while the selection darts, the edge above its head swells and travels with it
-    if (selP.bump > .02) bumps.push({ s: sOfX(selP.head.x), A: selP.bump, w: 15 });
+    const selP = selPose();                           // while the selection flows, the edge above it swells and travels with it
+    if (selP.bump > .02) bumps.push({ s: sOfX(selP.mid), A: selP.bump, w: 17 });
     for (const r of flow) rips.push({ s0: r.s0, age: G - r.t0, A: r.A });
     drawBar(bumps, rips); drawBadge(S, mode);
     set(el.glow, { cx: f(glow.x), cy: f(glow.y), opacity: f(glow.o) });
@@ -686,7 +691,7 @@
 
     if (sel.t >= 0) {
       const before = sel.t; sel.t += dt; active = true;
-      if (before < 240 && sel.t >= 240) flow.push({ s0: sOfX(+$(sel.key).dataset.x), t0: G, A: 1.2 });
+      if (before < 430 && sel.t >= 430) flow.push({ s0: sOfX(+$(sel.key).dataset.x), t0: G, A: 1.2 });
       if (sel.t >= SEL_T) { sel.t = -1; sel.x = +$(sel.key).dataset.x; }
     }
     flow = flow.filter(r => G - r.t0 < 420); if (flow.length) active = true;
@@ -757,7 +762,7 @@
 
   /* ---------- nav selection ---------- */
   function select(key) {
-    if (key !== sel.key) { const h = selPose().head; Object.assign(sel, { fx: h.x, fw: h.w, fh: h.h, key, t: 0 }); }   // a new pick mid-flight leaves from wherever the head is
+    if (key !== sel.key) { Object.assign(sel, { fx: selPose().b.x, key, t: 0 }); }   // a new pick mid-flight leaves from wherever the front lobe is
     for (const g of el.icons) g.classList.toggle('on', g.id === key);
     kick();
   }
@@ -828,6 +833,7 @@
   // Frame-accurate scrubbing, for inspecting a single moment.
   window.fluid = {
     seek(kind, key, t, from) { mode = MODES[key]; state = 'badge'; draw(kind === 'in' ? seqIn(t, mode) : kind === 'out' ? seqOut(t, mode) : seqMorph(t, MODES[from], mode), t); },
+    sel(from, to, t) { sel.fx = +$(from).dataset.x; sel.key = to; sel.t = t; for (const g of el.icons) g.classList.toggle('on', g.id === to); draw(restScene(), 0); },
     tip(id, p, key) { for (const tp of TIPS) tp.p = tp.id === id ? p : 0; if (key) { plain.key = key; plain.p = 0; stepPlain(0); plain.p = p; } state = 'empty'; draw(restScene(), 0); }
   };
 
