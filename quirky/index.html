@@ -134,7 +134,7 @@ h1 {
   -webkit-tap-highlight-color: transparent;
 }
 .nav-btn > svg { display: block; width: 24px; height: 24px; }
-.tip-wrap > .nav-btn { will-change: transform; }
+.tip-wrap > .nav-btn, #home, #bell { will-change: transform; }
 .nav-btn:hover,
 .tip-wrap.is-open .nav-btn { background: var(--press); color: var(--ink); }
 .nav-btn.is-current { background: var(--press); color: var(--ink); cursor: default; }
@@ -467,9 +467,9 @@ h2 { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: -0.005em; }
     else clapper.removeAttribute('transform');
   }
   let barRot = 0;
-  const pulls = { plain: 0, rich: 0 };   // px each hanging tooltip drags the bar down
+  const pulls = { plain: 0, rich: 0 };   // px the bar is pushed down: by each hanging tooltip, and by a pressed tab
   function applyBar() {
-    const y = pulls.plain + pulls.rich;
+    const y = Object.values(pulls).reduce((a, b) => a + b, 0);
     bar.style.transform = (y || barRot) ? `translateY(${y.toFixed(2)}px) rotate(${barRot.toFixed(3)}deg)` : '';
   }
   function setBar(deg, slideAt) {
@@ -606,8 +606,21 @@ h2 { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: -0.005em; }
     clearBadge(null, false);
   });
   // Opening the bell moves the highlight off Home and the badge, now read, falls away.
-  bell.addEventListener('click', () => { setTab('bell'); if (current !== 'none') select('none'); });
-  home.addEventListener('click', () => setTab('home'));
+  // Pressing a tab puts weight on it: the icon sinks, the bar gives under it, and both spring back.
+  const PRESS_MS = 440;
+  const pressShape = u => Math.sin(TAU * u * PRESS_MS / 210) * Math.exp(-3 * u) * (1 - u);
+  const pressNorm = peakOf(pressShape);
+  function pressTab(el, key) {
+    if (reduced()) return;
+    run('press-' + key, PRESS_MS, t => {
+      const k = pressShape(t / PRESS_MS) / pressNorm;
+      el.style.transform = `translateY(${(5 * k).toFixed(2)}px) scale(${(1 - 0.07 * Math.max(0, k)).toFixed(4)})`;
+      pulls['press-' + key] = 2.5 * k;
+      applyBar();
+    }, () => { el.style.transform = ''; pulls['press-' + key] = 0; applyBar(); });
+  }
+  bell.addEventListener('click', () => { setTab('bell'); pressTab(bell, 'bell'); if (current !== 'none') select('none'); });
+  home.addEventListener('click', () => { setTab('home'); pressTab(home, 'home'); });
 
   syncUI();
 
