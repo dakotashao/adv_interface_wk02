@@ -56,7 +56,7 @@ button { font: inherit; color: inherit; }
 .is-flow .world { position: relative; }
 .hud { position: absolute; z-index: 20; cursor: default; }
 h1 { left: 22px; top: 20px; color: var(--ink); font: 500 13px/1.2 var(--mono); pointer-events: none; }
-.hud-zoom { left: 22px; top: 50%; transform: translateY(-50%); }
+.hud-zoom { left: 22px; bottom: 18px; }
 .is-flow h1 { position: static; padding: 20px 20px 0; }
 .is-flow .hud-zoom { display: none; }
 
@@ -191,7 +191,7 @@ h2 { font: inherit; letter-spacing: .02em; margin-right: auto; white-space: nowr
 .hud .seg button:focus-visible { outline-color: var(--ink); }
 .seg button { padding: 6px 8px; border: 0; background: transparent; color: var(--fg); font: 400 12px/1.2 var(--mono); cursor: pointer; border-radius: 3px; }
 .seg button[aria-pressed="true"] { background: var(--fg); color: var(--ink); }
-/* the zoom bar: bare bracketed commands stacked down the left edge */
+/* the zoom bar: bare bracketed commands stacked in the bottom-left corner */
 .zoom .seg-b { flex-direction: column; align-items: flex-start; gap: 8px; border: 0; background: none; }
 .zoom button { padding: 3px 0; color: var(--ink); white-space: pre; }
 .zoom button::before { content: "[ "; color: var(--ink-dim); }
@@ -367,7 +367,7 @@ h2 { font: inherit; letter-spacing: .02em; margin-right: auto; white-space: nowr
         for (const k of ['badge', 'dot', 'plain', 'rich']) { place(k, x, y, w); y += R[k].h + 28; }
         W = vw; H = y + 12;
       } else {
-        const top = 96, gap = 56, c1 = 116, w1 = 270, g = 150, wh = 268, c2 = c1 + w1 + g, c3 = c2 + wh + g, w3 = 232;
+        const top = 96, gap = 56, c1 = 72, w1 = 270, g = 150, wh = 268, c2 = c1 + w1 + g, c3 = c2 + wh + g, w3 = 232;
         place('badge', c1, 0, w1); place('dot', c1, 0, w1); place('plain', c3, 0, w3); place('rich', c3, 0, w3); place('res', c2, 0, wh);
         const hL = R.badge.h + gap + R.dot.h, hR = R.plain.h + gap + R.rich.h, mid = top + Math.max(hL, hR) / 2;
         place('badge', c1, mid - hL / 2, w1); place('dot', c1, mid - hL / 2 + R.badge.h + gap, w1);
