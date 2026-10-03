@@ -637,7 +637,7 @@ h2 { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: -0.005em; }
   function pressTab(el, key) {
     if (reduced()) return;
     run('press-' + key, PRESS_MS, t => {
-      pulls['press-' + key] = 1.6 * pressShape(t / PRESS_MS) / pressNorm;
+      pulls['press-' + key] = 1.0 * pressShape(t / PRESS_MS) / pressNorm;
       applyBar();
     }, () => { pulls['press-' + key] = 0; applyBar(); });
   }
