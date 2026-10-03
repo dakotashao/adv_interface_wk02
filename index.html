@@ -42,8 +42,10 @@
     text-decoration: none;
     container-type: inline-size;
   }
-  /* Each tile shows the live prototype, drawn at 1200 x 800 and scaled to fit.
-     A tile can set data-w to draw its page smaller, which makes the component look bigger. */
+  /* Each tile shows the live prototype itself, framed on the component and nothing else.
+     data-vw   width the page is drawn at (default 1200; smaller makes everything look bigger)
+     data-crop "x,y,w" the part of that page the tile shows (height follows the 3:2 tile)
+     data-hide selector for controls to hide inside the preview */
   .tile iframe {
     position: absolute;
     top: 0;
@@ -52,7 +54,7 @@
     height: 800px;
     border: 0;
     transform-origin: 0 0;
-    transform: scale(var(--s, 0.3));
+    transform: scale(0.3);
     pointer-events: none;
   }
   .tile .label {
@@ -79,23 +81,44 @@
   <p>Advanced Interface, Week 2</p>
 </header>
 <main class="grid">
-  <a class="tile" href="quirky/" data-w="620"><iframe src="quirky/#thumb" title="" loading="lazy" tabindex="-1" aria-hidden="true"></iframe><span class="label">Quirky, Information Has Weight</span></a>
-  <a class="tile" href="ethereal/"><iframe src="ethereal/" title="" loading="lazy" tabindex="-1" aria-hidden="true"></iframe><span class="label">Ethereal, Fluid Interface</span></a>
-  <a class="tile" href="playful/"><iframe src="playful/" title="" loading="lazy" tabindex="-1" aria-hidden="true"></iframe><span class="label">Playful, Notifications Pile Up</span></a>
-  <a class="tile" href="nostalgic/"><iframe src="nostalgic/" title="" loading="lazy" tabindex="-1" aria-hidden="true"></iframe><span class="label">Nostalgic, Resolving Data</span></a>
-  <a class="tile" href="playful-reading/"><iframe src="playful-reading/" title="" loading="lazy" tabindex="-1" aria-hidden="true"></iframe><span class="label">Playful, Reading Pile</span></a>
-  <a class="tile" href="glass/"><iframe src="glass/" title="" loading="lazy" tabindex="-1" aria-hidden="true"></iframe><span class="label">Ethereal, Liquid Glass</span></a>
+  <a class="tile" href="quirky/" data-vw="620"><iframe src="quirky/#thumb" title="" loading="lazy" tabindex="-1" aria-hidden="true"></iframe><span class="label">Quirky, Information Has Weight</span></a>
+  <a class="tile" href="ethereal/" data-crop="120,75,960"><iframe src="ethereal/" title="" loading="lazy" tabindex="-1" aria-hidden="true"></iframe><span class="label">Ethereal, Fluid Interface</span></a>
+  <a class="tile" href="playful/" data-crop="120,41,960"><iframe src="playful/" title="" loading="lazy" tabindex="-1" aria-hidden="true"></iframe><span class="label">Playful, Notifications Pile Up</span></a>
+  <a class="tile" href="nostalgic/" data-crop="4,71,960"><iframe src="nostalgic/" title="" loading="lazy" tabindex="-1" aria-hidden="true"></iframe><span class="label">Nostalgic, Resolving Data</span></a>
+  <a class="tile" href="playful-reading/" data-crop="130,46,940"><iframe src="playful-reading/" title="" loading="lazy" tabindex="-1" aria-hidden="true"></iframe><span class="label">Playful, Reading Pile</span></a>
+  <a class="tile" href="glass/" data-crop="120,75,960" data-hide=".controls"><iframe src="glass/" title="" loading="lazy" tabindex="-1" aria-hidden="true"></iframe><span class="label">Ethereal, Liquid Glass</span></a>
 </main>
 <script>
-  // Keep every preview scaled to its tile's width.
+  // Frame each preview on its component and keep it scaled to the tile's width.
+  const frames = new Map();
   const fit = new ResizeObserver(entries => {
-    for (const e of entries) e.target.style.setProperty('--s', e.contentRect.width / (+e.target.dataset.w || 1200));
+    for (const e of entries) {
+      const { frame, x, y, w } = frames.get(e.target), s = e.contentRect.width / w;
+      frame.style.transform = `translate(${-x * s}px, ${-y * s}px) scale(${s})`;
+    }
   });
-  document.querySelectorAll('.tile').forEach(t => {
-    const w = +t.dataset.w || 1200, frame = t.querySelector('iframe');
-    frame.style.width = w + 'px';
-    frame.style.height = Math.round(w * 2 / 3) + 'px';
-    fit.observe(t);
+  document.querySelectorAll('.tile').forEach(tile => {
+    const frame = tile.querySelector('iframe');
+    const vw = +tile.dataset.vw || 1200;
+    const [x, y, w] = (tile.dataset.crop || `0,0,${vw}`).split(',').map(Number);
+    frame.style.width = vw + 'px';
+    frame.style.height = Math.round(vw * 2 / 3) + 'px';
+    frames.set(tile, { frame, x, y, w });
+    if (tile.dataset.hide) {
+      const hide = () => {
+        try {
+          const doc = frame.contentDocument;
+          if (!doc || !doc.head || doc.getElementById('thumb-hide')) return;
+          const style = doc.createElement('style');
+          style.id = 'thumb-hide';
+          style.textContent = `${tile.dataset.hide} { visibility: hidden !important; }`;
+          doc.head.append(style);
+        } catch (err) { /* preview stays as the page draws it */ }
+      };
+      frame.addEventListener('load', hide);
+      hide();
+    }
+    fit.observe(tile);
   });
 </script>
 </body>
