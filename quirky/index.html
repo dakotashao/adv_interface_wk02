@@ -210,6 +210,7 @@ h1 {
   gap: 2px;
 }
 .tip-title { margin: 0; font-weight: 600; }
+.tip-title, .tip-text, .tip-action, .tip-body { will-change: transform; }
 .tip-text { margin: 0; color: var(--tip-muted); text-wrap: balance; }
 .tip-action {
   appearance: none;
@@ -646,73 +647,80 @@ h2 { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: -0.005em; }
   syncUI();
 
   /* ---------- Tooltip ---------- */
-  // The bag starts almost empty. Its bottom edge falls under gravity, overshoots, and springs back.
+  // The tooltip moves the way the badge does: a rigid piece that drops under gravity, hits the end of its
+  // travel, takes two small hops and stills. Nothing stretches or squashes. Weight shows in how far it drops,
+  // how hard it lands, how low it hangs, and how much the bar gives. Both tooltips take the same time.
   const TIPS = {
-    plain: { label: 'Plain', stretch: 10, cycles: 1.5,  damp: 3.2, fall: 110, spring: 400, radius: 12 },
-    rich:  { label: 'Rich',  stretch: 40, cycles: 2.25, damp: 2.6, fall: 180, spring: 780, radius: 14 }
+    plain: { drop: 12, hop: 2, pull: 0.8, hang: 0, radius: 12,
+             items: [{ sel: '.tip-body', delay: 30, from: 6, hop: 1 }] },
+    rich:  { drop: 26, hop: 6, pull: 3.2, hang: 8, radius: 14,
+             // The contents are loose inside: title, text and button land one after another, the button last and hardest.
+             items: [{ sel: '.tip-title', delay: 20, from: 8, hop: 1 },
+                     { sel: '.tip-text', delay: 75, from: 10, hop: 1.2 },
+                     { sel: '.tip-action', delay: 155, from: 16, hop: 3, thud: 1.1 }] }
   };
-  const START_H = 14;                                   // px of bag showing before the weight drops
-  const springShape = (u, c) => Math.sin(TAU * c.cycles * u) * Math.exp(-c.damp * u) * (1 - u);
-  Object.values(TIPS).forEach(c => { c.norm = peakOf(u => springShape(u, c)); });
-  const springAt = (tau, c) => (tau <= 0 || tau >= c.spring) ? 0 : c.stretch * springShape(tau / c.spring, c) / c.norm;
-  // x = how far the bottom edge sits below its resting place (negative means above it)
-  function bottomAt(t, c, H) {
-    if (t < c.fall) { const p = t / c.fall; return -(H - START_H) * (1 - p * p); }
-    return springAt(t - c.fall, c);
+  const T_FALL = 200, T_SETTLE = 470, T_HOP1 = 180, T_HOP2 = 110, T_ITEM_HOP = 140;   // ms
+  function hops(tau, h) {                                // the same two-hop landing the badge makes
+    if (tau <= 0) return 0;
+    const p = tau / T_HOP1;
+    if (p < 1) return 4 * h * p * (1 - p);
+    const q = (tau - T_HOP1) / T_HOP2;
+    return q < 1 ? 4 * h * 0.3 * q * (1 - q) : 0;
   }
-  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
-  // Top edge and caret never move. Stretched: the sides pinch in and the bottom sags. Compressed: the reverse.
-  function bagPath(W, H, x, r0, elastic) {
-    const h = Math.max(START_H, H + x);
-    const r = Math.min(r0, h / 2);
-    // While the bottom is still falling the shape stays a clean rounded box; it only deforms once the weight lands.
-    const pinch = elastic ? clamp(x * 0.2, -5, 9) : 0;
-    const sag = elastic ? clamp(x * 0.3, -4, 12) : 0;
-    const rb = Math.min(h / 2, r + Math.max(0, sag) * 0.6);
-    const c = W / 2, n = v => v.toFixed(2);
-    return `M${n(r)},0 H${n(c - 6)} L${n(c)},-5 L${n(c + 6)},0 H${n(W - r)} Q${n(W)},0 ${n(W)},${n(r)}` +
-      ` C${n(W - pinch)},${n(h * 0.35)} ${n(W - pinch)},${n(h * 0.65)} ${n(W)},${n(h - rb)}` +
-      ` Q${n(W)},${n(h)} ${n(W - rb)},${n(h)} Q${n(c)},${n(h + 2 * sag)} ${n(rb)},${n(h)}` +
-      ` Q0,${n(h)} 0,${n(h - rb)} C${n(pinch)},${n(h * 0.65)} ${n(pinch)},${n(h * 0.35)} 0,${n(r)} Q0,0 ${n(r)},0Z`;
+  const tugShape = u => Math.sin(TAU * u * T_SETTLE / 300) * Math.exp(-3.2 * u) * (1 - u);
+  const tugNorm = peakOf(tugShape);
+  const tugAt = tau => (tau <= 0 || tau >= T_SETTLE) ? 0 : tugShape(tau / T_SETTLE) / tugNorm;   // the bar gives, then recovers
+  function boxPath(W, H, r) {                            // a plain rounded box with its caret; it never changes shape
+    const c = W / 2;
+    return `M${r},0 H${c - 6} L${c},-5 L${c + 6},0 H${W - r} Q${W},0 ${W},${r} V${H - r} Q${W},${H} ${W - r},${H}` +
+      ` H${r} Q0,${H} 0,${H - r} V${r} Q0,0 ${r},0Z`;
   }
 
   const openState = { plain: false, rich: false };
-  const geo = { plain: { W: 0, H: 0 }, rich: { W: 0, H: 0 } };
+  const pose = { plain: { y: 0, pull: 0 }, rich: { y: 0, pull: 0 } };
   const leaveTimers = {};
-  let lastPointer = 'mouse';
+  let lastPointer = 'mouse', pressed = false;
 
   function parts(kind) {
     const tip = $('tip-' + kind);
     return { tip, wrap: tip.parentElement, anchor: $('anchor-' + kind), inner: tip.querySelector('.tip-inner'),
-      bg: tip.querySelector('.tip-bg'), path: tip.querySelector('.tip-bg path'), body: tip.querySelector('.tip-body'),
-      action: tip.querySelector('.tip-action') };
+      bg: tip.querySelector('.tip-bg'), path: tip.querySelector('.tip-bg path'), action: tip.querySelector('.tip-action') };
   }
   function measure(kind) {
-    const { inner, bg } = parts(kind);
-    geo[kind] = { W: inner.offsetWidth, H: inner.offsetHeight };
-    bg.setAttribute('width', geo[kind].W);
-    bg.setAttribute('height', geo[kind].H);
+    const { inner, bg, path } = parts(kind), W = inner.offsetWidth, H = inner.offsetHeight;
+    bg.setAttribute('width', W);
+    bg.setAttribute('height', H);
+    path.setAttribute('d', boxPath(W, H, TIPS[kind].radius));
   }
-  const lastX = { plain: 0, rich: 0 };
-  let pressed = false;
-  function paintTip(kind, x, pulling, textY) {
-    const { path, body, anchor, action } = parts(kind), g = geo[kind];
-    lastX[kind] = x;
-    path.setAttribute('d', bagPath(g.W, g.H, x, TIPS[kind].radius, pulling));
-    const leaking = textY != null;
-    const ty = leaking ? textY : x * (x < 0 ? 0.55 : 0.7);   // the text is the weight: it drops in and rides the bottom
-    body.style.transform = ty ? `translateY(${ty.toFixed(2)}px)` : '';
-    body.style.clipPath = (x < 0 || leaking) ? `inset(${(-ty).toFixed(1)}px -40px ${(ty - x).toFixed(1)}px -40px)` : '';
-    if (action) {
-      // The action is the heaviest thing in the tooltip: it sinks further than the text and lands last.
-      const extra = leaking ? ty * 0.3 : (x > 0 ? x * 0.28 : x * 0.05);
-      action.style.transform = (extra || pressed)
-        ? `translateY(${extra.toFixed(2)}px)${pressed ? ' scale(1.02, 0.95)' : ''}` : '';
-    }
-    pulls[kind] = pulling ? x * 0.09 : 0;                // the bar gives where the tooltip hangs
-    anchor.style.transform = (pulling && x) ? `translateY(${(x * 0.1).toFixed(2)}px)` : '';
+  // y: px below its hanging place. rot: tilt while falling away. pull: px it drags the bar and its icon down.
+  function placeTip(kind, y, rot, pull) {
+    const { inner, anchor } = parts(kind), ty = TIPS[kind].hang + y;
+    pose[kind].y = y; pose[kind].pull = pull;
+    inner.style.transform = (ty || rot) ? `translateY(${ty.toFixed(2)}px) rotate(${rot.toFixed(2)}deg)` : '';
+    pulls[kind] = pull;
+    anchor.style.transform = pull ? `translateY(${(pull * 1.2).toFixed(2)}px)` : '';
     applyBar();
   }
+  // Each item falls into place on its own clock. Returns the extra tug the heavy ones give the bar as they land.
+  function placeItems(kind, t) {
+    const { tip } = parts(kind);
+    let thud = 0;
+    for (const it of TIPS[kind].items) {
+      const el = tip.querySelector(it.sel), land = T_FALL + it.delay;
+      let off = 0, op = 1;
+      if (t < land) { const p = t / land; off = -it.from * (1 - p * p); op = Math.min(1, t / (land * 0.7)); }
+      else {
+        const p = (t - land) / T_ITEM_HOP;
+        if (p < 1) { off = -4 * it.hop * p * (1 - p); if (it.thud) thud += it.thud * Math.sin(Math.PI * p); }
+      }
+      if (el.classList.contains('tip-action') && pressed) off += 1.5;
+      el.style.transform = off ? `translateY(${off.toFixed(2)}px)` : '';
+      el.style.opacity = op < 1 ? op.toFixed(3) : '';
+    }
+    return thud;
+  }
+  function restTip(kind) { placeTip(kind, 0, 0, 0); placeItems(kind, Infinity); }
+
   function openTip(kind) {
     clearTimeout(leaveTimers[kind]);
     if (openState[kind]) return;
@@ -721,24 +729,30 @@ h2 { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: -0.005em; }
     wrap.classList.add('is-open');
     tip.hidden = false;
     tip.style.opacity = '';
-    parts(kind).inner.style.transform = '';
+    restTip(kind);
     measure(kind);
     if (reduced()) {
-      paintTip(kind, 0, false);
       run('tip-' + kind, 120, t => { tip.style.opacity = t / 120; }, () => { tip.style.opacity = ''; });
       return;
     }
-    const H = geo[kind].H;
-    run('tip-' + kind, c.fall + c.spring, t => {
-      tip.style.opacity = Math.min(1, t / 60);
-      paintTip(kind, bottomAt(t, c, H), t >= c.fall);
-    }, () => { tip.style.opacity = ''; paintTip(kind, 0, false); });
+    run('tip-' + kind, T_FALL + T_SETTLE, t => {
+      tip.style.opacity = Math.min(1, t / 70);
+      const thud = placeItems(kind, t);
+      if (t < T_FALL) {
+        const p = t / T_FALL;                             // gravity: distance grows with t squared
+        placeTip(kind, -c.drop * (1 - p * p), 0, 0);
+      } else {
+        const tau = t - T_FALL;                           // it reaches the end of its travel and yanks the bar
+        placeTip(kind, -hops(tau, c.hop), 0, c.pull * tugAt(tau) + thud);
+      }
+    }, () => { tip.style.opacity = ''; restTip(kind); });
   }
-  // Leaving: the tooltip strains under its own weight, lets go of the bar and falls away as one piece,
-  // tipping as it goes. Relieved, the bar springs up where it hung and rings. More information, bigger spring.
+
+  // Leaving: it slips, lets go of the bar and falls away as one piece, tipping as it goes.
+  // Relieved, the bar springs up where it hung. More information, bigger spring.
   const EXITS = {
-    plain: { strain: 80,  sag: 2,  fall: 300, dist: 34,  tilt: -3, kick: 0.8, ring: 360 },
-    rich:  { strain: 120, sag: 5,  fall: 360, dist: 56,  tilt: 2,  kick: 2,   ring: 460 }
+    plain: { strain: 80,  slip: 1.5, fall: 300, dist: 34, tilt: -3, kick: 0.8, ring: 360 },
+    rich:  { strain: 120, slip: 3,   fall: 360, dist: 56, tilt: 2,  kick: 2,   ring: 460 }
   };
   const reboundShape = (u, ring) => Math.sin(TAU * u * ring / 190) * Math.exp(-3 * u) * (1 - u);
   Object.values(EXITS).forEach(e => { e.norm = peakOf(u => reboundShape(u, e.ring)); });
@@ -746,35 +760,32 @@ h2 { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: -0.005em; }
     clearTimeout(leaveTimers[kind]);
     if (!openState[kind]) return;
     openState[kind] = false;
-    const { tip, wrap, anchor, inner } = parts(kind);
+    const { tip, wrap } = parts(kind);
     wrap.classList.remove('is-open');
     if (kind === 'rich') { pressed = false; $('manage').classList.remove('is-pressed'); }
-    const finish = () => { tip.hidden = true; tip.style.opacity = ''; inner.style.transform = ''; paintTip(kind, 0, false); };
+    placeItems(kind, Infinity);
+    const finish = () => { tip.hidden = true; tip.style.opacity = ''; restTip(kind); };
     if (reduced()) {
       run('tip-' + kind, 120, t => { tip.style.opacity = 1 - t / 120; }, finish);
       return;
     }
-    const e = EXITS[kind], from = lastX[kind];
+    const e = EXITS[kind], y0 = pose[kind].y, pull0 = pose[kind].pull;
     run('tip-' + kind, e.strain + Math.max(e.fall, e.ring), t => {
-      if (t < e.strain) {                                           // the weight wins: it sags and drags the bar down
+      if (t < e.strain) {                                 // the weight wins: it slips and drags the bar with it
         const p = Math.sin(Math.PI / 2 * t / e.strain);
-        paintTip(kind, from + (e.sag - from) * p, true);
+        placeTip(kind, y0 + (e.slip - y0) * p, 0, pull0 + (e.slip * 0.4 - pull0) * p);
         return;
       }
-      const tau = t - e.strain;
+      const tau = t - e.strain, u = Math.min(1, tau / e.ring);
+      const pull = e.slip * 0.4 * Math.max(0, 1 - tau / 40) - e.kick * reboundShape(u, e.ring) / e.norm;   // unloaded, the bar springs up
       if (tau < e.fall) {
         const f = tau / e.fall;
-        paintTip(kind, e.sag * Math.max(0, 1 - tau / 110), false);  // let go, the container relaxes to its own shape
-        inner.style.transform = `translateY(${(e.dist * f * f).toFixed(2)}px) rotate(${(e.tilt * f).toFixed(2)}deg)`;   // gravity
+        placeTip(kind, e.slip + e.dist * f * f, e.tilt * f, pull);            // gravity again
         tip.style.opacity = f < 0.3 ? 1 : Math.max(0, 1 - (f - 0.3) / 0.7);   // a short drop, gone before it travels far
-      } else if (!tip.hidden) {
-        finish();
+      } else {
+        if (!tip.hidden) { tip.hidden = true; tip.style.opacity = ''; }
+        placeTip(kind, 0, 0, pull);
       }
-      const u = Math.min(1, tau / e.ring);                          // the bar, unloaded, springs up and rings
-      const pull = e.sag * 0.09 * Math.max(0, 1 - tau / 40) - e.kick * reboundShape(u, e.ring) / e.norm;
-      pulls[kind] = pull;
-      anchor.style.transform = pull ? `translateY(${(pull * 1.3).toFixed(2)}px)` : '';
-      applyBar();
     }, finish);
   }
 
@@ -809,40 +820,34 @@ h2 { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: -0.005em; }
     });
   });
 
-  // The action button. Leaning on it sags the tooltip, pressing pushes weight into it,
-  // and letting go makes the whole thing spring back.
+  // The action button. A press is weight too: the button goes down, the whole tooltip is pushed a little
+  // lower and the bar gives with it. Letting go, it comes back up with one small hop. Still rigid.
   const manage = $('manage');
-  const LEAN = 4, PRESS = 13;                                   // px the bottom edge gives under hover and under a press
-  const ringOut = (t, dur) => { const u = t / dur; return Math.cos(TAU * t / 170) * Math.exp(-3.4 * u) * (1 - u); };
-  function settleTo(target, dur) {                              // ease the bottom edge to a held depth
-    const from = lastX.rich;
-    run('tip-rich', dur, t => { const p = t / dur; paintTip('rich', from + (target - from) * (1 - (1 - p) * (1 - p)), true); });
-  }
-  function springBack() {                                       // released: overshoot upward, ring, settle
-    const from = lastX.rich;
-    if (!from) { paintTip('rich', 0, false); return; }
-    run('tip-rich', 460, t => paintTip('rich', from * ringOut(t, 460), true), () => paintTip('rich', 0, false));
-  }
-  const tipBusy = () => anims.has('tip-rich');
+  const PUSH = 3, PUSH_PULL = 1.2;
   function pressIn() {
     if (!openState.rich || reduced()) return;
     pressed = true;
     manage.classList.add('is-pressed');
-    settleTo(PRESS, 100);
+    const y0 = pose.rich.y, pull0 = pose.rich.pull;
+    run('tip-rich', 90, t => {
+      const p = 1 - Math.pow(1 - t / 90, 2);
+      placeItems('rich', Infinity);
+      placeTip('rich', y0 + (PUSH - y0) * p, 0, pull0 + (PUSH_PULL - pull0) * p);
+    });
   }
   function pressOut() {
     if (!pressed) return;
     pressed = false;
     manage.classList.remove('is-pressed');
-    if (openState.rich) springBack();
+    if (!openState.rich) return;
+    const y0 = pose.rich.y, pull0 = pose.rich.pull;
+    run('tip-rich', 240, t => {
+      const p = t / 240, back = (1 - p) * (1 - p);
+      placeItems('rich', Infinity);
+      placeTip('rich', y0 * back - 1.5 * Math.sin(Math.PI * p), 0, pull0 * back);
+    }, () => restTip('rich'));
   }
-  manage.addEventListener('pointerenter', e => {
-    if (e.pointerType === 'mouse' && openState.rich && !tipBusy() && !reduced()) settleTo(LEAN, 140);
-  });
-  manage.addEventListener('pointerleave', () => {
-    if (pressed) pressOut();
-    else if (openState.rich && !tipBusy() && lastX.rich) springBack();
-  });
+  manage.addEventListener('pointerleave', pressOut);
   manage.addEventListener('pointerdown', pressIn);
   manage.addEventListener('pointerup', pressOut);
   manage.addEventListener('pointercancel', pressOut);
