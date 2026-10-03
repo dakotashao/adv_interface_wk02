@@ -45,7 +45,8 @@
   /* Each tile shows the live prototype itself, framed on the component and nothing else.
      data-vw   width the page is drawn at (default 1200; smaller makes everything look bigger)
      data-crop "x,y,w" the part of that page the tile shows (height follows the 3:2 tile)
-     data-hide selector for controls to hide inside the preview */
+     data-hide selector for controls to hide inside the preview
+     data-loop controls to press in turn, forever, so the preview keeps replaying its animation */
   .tile iframe {
     position: absolute;
     top: 0;
@@ -82,11 +83,11 @@
 </header>
 <main class="grid">
   <a class="tile" href="quirky/" data-vw="620"><iframe data-src="quirky/#thumb" title="" loading="lazy" tabindex="-1" aria-hidden="true"></iframe><span class="label">Quirky, Information Has Weight</span></a>
-  <a class="tile" href="ethereal/" data-crop="120,75,960"><iframe data-src="ethereal/" title="" loading="lazy" tabindex="-1" aria-hidden="true"></iframe><span class="label">Ethereal, Fluid Interface</span></a>
-  <a class="tile" href="playful/"><iframe data-src="playful/#thumb" title="" loading="lazy" tabindex="-1" aria-hidden="true"></iframe><span class="label">Playful, Notifications Pile Up</span></a>
-  <a class="tile" href="nostalgic/" data-crop="4,71,960" data-hide=".hud-zoom"><iframe data-src="nostalgic/" title="" loading="lazy" tabindex="-1" aria-hidden="true"></iframe><span class="label">Nostalgic, Resolving Data</span></a>
-  <a class="tile" href="playful-reading/"><iframe data-src="playful-reading/#thumb" title="" loading="lazy" tabindex="-1" aria-hidden="true"></iframe><span class="label">Playful, Reading Pile</span></a>
-  <a class="tile" href="glass/" data-crop="120,75,960" data-hide=".controls"><iframe data-src="glass/" title="" loading="lazy" tabindex="-1" aria-hidden="true"></iframe><span class="label">Ethereal, Liquid Glass</span></a>
+  <a class="tile" href="ethereal/" data-crop="120,75,960" data-loop='.seg [data-k="none"] | .seg [data-k="12"] | .seg [data-k="none"] | .seg [data-k="99+"] | .seg [data-k="dot"] | .seg [data-k="3"]'><iframe data-src="ethereal/" title="" loading="lazy" tabindex="-1" aria-hidden="true"></iframe><span class="label">Ethereal, Fluid Interface</span></a>
+  <a class="tile" href="playful/" data-loop="#newBtn | #newBtn | #newBtn | #clearBtn | #restoreBtn"><iframe data-src="playful/#thumb" title="" loading="lazy" tabindex="-1" aria-hidden="true"></iframe><span class="label">Playful, Notifications Pile Up</span></a>
+  <a class="tile" href="nostalgic/" data-crop="4,71,960" data-hide=".hud-zoom" data-loop="#s1-n-12 | #s2-d-none | #s1-n-none | #s2-d-dot | #s1-n-99 | #s1-n-7"><iframe data-src="nostalgic/" title="" loading="lazy" tabindex="-1" aria-hidden="true"></iframe><span class="label">Nostalgic, Resolving Data</span></a>
+  <a class="tile" href="playful-reading/" data-loop="#b-none | #b-12 | #b-none | #b-99 | #b-dot | #b-3"><iframe data-src="playful-reading/#thumb" title="" loading="lazy" tabindex="-1" aria-hidden="true"></iframe><span class="label">Playful, Reading Pile</span></a>
+  <a class="tile" href="glass/" data-crop="120,75,960" data-hide=".controls" data-loop='.seg [data-k="none"] | .seg [data-k="12"] | .seg [data-k="none"] | .seg [data-k="99+"] | .seg [data-k="dot"] | .seg [data-k="3"]'><iframe data-src="glass/" title="" loading="lazy" tabindex="-1" aria-hidden="true"></iframe><span class="label">Ethereal, Liquid Glass</span></a>
 </main>
 <script>
   // Frame each preview on its component and keep it scaled to the tile's width.
@@ -124,6 +125,21 @@
     url.searchParams.set('v', stamp);
     frame.src = url.href;
     fit.observe(tile);
+  });
+
+  // Nobody can click inside a preview, so each tile presses its own controls in turn and the
+  // animation keeps replaying. Tiles are staggered so they do not all move on the same beat.
+  [...document.querySelectorAll('.tile[data-loop]')].forEach((tile, i) => {
+    const frame = tile.querySelector('iframe');
+    const steps = tile.dataset.loop.split('|').map(s => s.trim());
+    let n = 0;
+    setTimeout(() => setInterval(() => {
+      if (document.hidden) return;
+      try {
+        const target = frame.contentDocument && frame.contentDocument.querySelector(steps[n % steps.length]);
+        if (target) { target.click(); n++; }
+      } catch (err) { /* preview keeps whatever it is showing */ }
+    }, 2800), 1500 + i * 450);
   });
 </script>
 </body>
