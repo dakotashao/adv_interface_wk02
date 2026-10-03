@@ -580,9 +580,10 @@ h2 { font: inherit; letter-spacing: .02em; margin-right: auto; white-space: nowr
   }
 
   /* ================= flap: a line of text that resolves character by character =================
-     Left to right, one character at a time: it swaps in place through a couple of candidates at a
-     fixed tick, locks, and only then does the next one start; the last few tick slower. Nothing
-     moves vertically. It clears right to left, faster. */
+     Every slot is filled from the start, with the wrong character. Then, left to right and one at
+     a time, a slot swaps in place through a couple of candidates at a fixed tick and locks on the
+     right one; only then does the next slot start, and the last few tick slower. Nothing moves
+     vertically. It clears right to left, faster: each character turns wrong again, then all go. */
   const UP = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', LOW = UP.toLowerCase(), NUM = '0123456789';
   class Flap {
     constructor(el, o) {
@@ -601,7 +602,7 @@ h2 { font: inherit; letter-spacing: .02em; margin-right: auto; white-space: nowr
         return { el: e, ch: '', s: '' };
       });
       [...this.final].forEach((f, i) => {
-        if (keep[i] === f) this.put(i, f, 'locked'); else this.put(i, f === ' ' || f === ',' ? f : '_', 'blank');
+        if (keep[i] === f) this.put(i, f, 'locked'); else this.put(i, f === ' ' ? f : this.alt(i, 2), 'blank');
       });
     }
     show() { if (this.state === 'empty') { this.build(); this.mark('blank'); } }
@@ -646,7 +647,7 @@ h2 { font: inherit; letter-spacing: .02em; margin-right: auto; white-space: nowr
         if (!await t.wait(j * step)) return false;
         this.put(i, this.alt(i, 0), 'clearing', 1);
         if (!await t.wait(26)) return false;
-        this.put(i, '_', 'blank');
+        this.put(i, this.alt(i, 1), 'blank');
         return true;
       });
       if (!(await Promise.all(jobs)).every(Boolean)) return false;
@@ -685,7 +686,7 @@ h2 { font: inherit; letter-spacing: .02em; margin-right: auto; white-space: nowr
       reels = chars.map((c, i) => {
         const s = document.createElement('span'); s.className = 'reel'; el.append(s);
         const r = new Reel(s, { final: c, pick: c === '+' ? symPick : digitPick(c) });
-        if (old[i] && old[i] !== '_') r.set(old[i], 'cycling'); else r.set('_', 'blank');
+        if (old[i] && old[i] !== '_') r.set(old[i], 'cycling'); else r.set(r.pick('', 0), 'cycling');
         return r;
       });
       if (el.dataset.step !== '3' && !await steps(el, 'step', ['1', '2', '3'], t)) return;
