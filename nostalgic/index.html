@@ -10,10 +10,10 @@
 <style>
 body{margin:0}
 [hidden]{display:none!important}
-/* Layout: a pannable canvas on a blue ground with a dot grid. A Resolver panel in the centre lists
+/* Layout: a pannable canvas on a blue ground scattered with plus signs. A Resolver panel in the centre lists
    its four outputs, one port and one live value each, and is wired to four frames: the two badges
-   on its left, the two tooltips on its right. A tooltip opens as one more node, with a white
-   header. Every frame can be dragged (tooltips by their header) and the wires follow. Every wire
+   on its left, the two tooltips on its right. A tooltip opens as one more node. Every header
+   is a solid white bar. Every frame can be dragged (tooltips by their header) and the wires follow. Every wire
    is the same line: a round port, level, a rounded right-angle turn, level, a round port. Every
    frame is a rounded hairline panel: a header row with a state light, a path name and a state
    chip, then the body. Under 760px the frames stack and the page scrolls. Blue and white only;
@@ -30,6 +30,7 @@ body{margin:0}
   --ring: #4872df;          /* the frame fill, flattened: the cut-out around badges and icon details */
   --wait: #8ea6ec;          /* an unresolved badge */
   --ink: #2748b4;           /* type on white */
+  --ink-dim: rgba(39, 72, 180, .4);
   --sans: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
   --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
   --r: 4px;
@@ -45,10 +46,10 @@ button { font: inherit; color: inherit; }
 .app.is-flow { height: auto; }
 
 /* ---------- canvas ---------- */
-.vp { position: relative; height: 100%; overflow: hidden; touch-action: none; cursor: grab;
-  /* the canvas dot grid: it pans and scales with the world, the dots themselves stay one size */
-  background-image: radial-gradient(circle, rgba(255, 255, 255, .3) 1px, transparent 1.5px);
-  background-size: var(--gs, 24px) var(--gs, 24px); background-position: var(--gx, 0px) var(--gy, 0px); }
+.vp { position: relative; height: 100%; overflow: hidden; touch-action: none; cursor: grab; }
+/* the canvas ground: sparse plus signs. They pan and spread with the world and stay one size. */
+.grid { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.grid path { fill: none; stroke: rgba(255, 255, 255, .42); stroke-width: 1; shape-rendering: crispEdges; }
 .vp.is-panning { cursor: grabbing; user-select: none; }
 .vp.is-panning .world { pointer-events: none; }
 .world { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
@@ -60,18 +61,18 @@ h1 { left: 22px; top: 20px; font: 500 13px/1.2 var(--mono); pointer-events: none
 .is-flow h1 { position: static; padding: 20px 20px 0; }
 .is-flow .hud-zoom { display: none; }
 
-.wires { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; }
+.wires { position: absolute; left: 0; top: 0; width: 1px; height: 1px; overflow: visible; pointer-events: none; }
 .wires path { fill: none; stroke: var(--line); stroke-width: 1.25; }
-.wires circle { fill: var(--bg); stroke: var(--dim); stroke-width: 1; }
-.wires g:not([data-s="empty"]) circle { stroke: var(--fg); }
-.wires g[data-s="locked"] circle { fill: var(--fg); }
+.ports { position: absolute; left: 0; top: 0; z-index: 100000; overflow: visible; pointer-events: none; }
+.ports circle { fill: var(--bg); stroke: var(--fg); stroke-width: 1.25; }
+.ports g[data-s="locked"] circle { fill: var(--fg); stroke: var(--bg); stroke-width: 1.5; }
 .wires g[data-s="locked"] path { stroke: rgba(255, 255, 255, .9); }
 .wires g[data-s="resolving"] path, .wires g[data-s="clearing"] path { stroke: var(--fg); stroke-dasharray: 3 7; animation: flow 420ms steps(5) infinite; }
 .wires g[data-s="clearing"] path { animation-direction: reverse; animation-duration: 300ms; }
 @keyframes flow { to { stroke-dashoffset: -10; } }
 
 /* ---------- frames: rounded hairline panel, header row with light, path and chip ---------- */
-.node, .frame { position: relative; isolation: isolate; border: 1px solid var(--edge); border-radius: 9px; background: var(--stage);
+.node, .frame { position: relative; isolation: isolate; border: 1px solid var(--edge); border-radius: 9px; background: var(--ring);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, .1), 0 24px 40px -28px rgba(12, 28, 96, .7); }
 .node { position: absolute; cursor: default; }
 .node-h { cursor: grab; }
@@ -79,21 +80,22 @@ h1 { left: 22px; top: 20px; font: 500 13px/1.2 var(--mono); pointer-events: none
 .node:hover, .node:focus-within { border-color: rgba(255, 255, 255, .7); }
 .node[data-s="locked"], .tip[data-step="3"] .frame { border-color: rgba(255, 255, 255, .85); }
 .node-h, .fh { height: 34px; padding: 0 8px 0 12px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--line);
-  background: rgba(255, 255, 255, .07); border-radius: 8px 8px 0 0; font: 500 12px/1.4 var(--mono); }
+  background: var(--fg); color: var(--ink); border-bottom-color: var(--fg); border-radius: 8px 8px 0 0; font: 500 12px/1.4 var(--mono); }
 h2 { font: inherit; letter-spacing: .02em; margin-right: auto; white-space: nowrap; }
-/* the tooltip's header is a solid white bar, and the handle it is dragged by */
-.fh { background: var(--fg); color: var(--ink); border-bottom-color: var(--fg); --unres: rgba(39, 72, 180, .42); cursor: grab; touch-action: none; user-select: none; }
+/* the tooltip's header is also the handle it is dragged by */
+.fh { --unres: var(--ink-dim); cursor: grab; touch-action: none; user-select: none; }
 .fh:active { cursor: grabbing; }
 .is-flow .fh { cursor: default; touch-action: auto; }
 .led { flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--dim); }
-[data-s="resolving"] > .node-h .led { background: var(--fg); animation: blink 240ms steps(2) infinite; }
-[data-s="clearing"] > .node-h .led { background: var(--muted); animation: blink 160ms steps(2) infinite; }
-[data-s="locked"] > .node-h .led, .led.is-live { background: var(--fg); box-shadow: 0 0 0 3px rgba(255, 255, 255, .22); }
+.node-h .led { background: var(--ink-dim); }
+[data-s="resolving"] > .node-h .led { background: var(--ink); animation: blink 240ms steps(2) infinite; }
+[data-s="clearing"] > .node-h .led { background: var(--ink); animation: blink 160ms steps(2) infinite; }
+[data-s="locked"] > .node-h .led, .node-h .led.is-live { background: var(--ink); box-shadow: 0 0 0 3px rgba(39, 72, 180, .2); }
 @keyframes blink { 50% { opacity: .25; } }
 .chip { flex: none; display: inline-flex; align-items: center; justify-content: center; height: 20px; min-width: 78px; padding: 0 7px;
-  border: 1px solid var(--line); border-radius: 4px; color: var(--muted); font: 500 9.5px/1 var(--mono); letter-spacing: .12em; }
-[data-s="resolving"] > .node-h .chip { color: var(--fg); border-color: var(--fg); }
-[data-s="locked"] > .node-h .chip { background: var(--fg); border-color: var(--fg); color: var(--ink); }
+  border: 1px solid var(--ink-dim); border-radius: 4px; color: rgba(39, 72, 180, .72); font: 500 9.5px/1 var(--mono); letter-spacing: .12em; }
+[data-s="resolving"] > .node-h .chip { color: var(--ink); border-color: var(--ink); }
+[data-s="locked"] > .node-h .chip { background: var(--ink); border-color: var(--ink); color: var(--fg); }
 .node-b { padding: 18px 14px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
 /* the resolver: one row per output, each with its own port, light and live value */
 .rows { padding: 7px 0; }
@@ -204,6 +206,7 @@ h2 { font: inherit; letter-spacing: .02em; margin-right: auto; white-space: nowr
 
 <div class="app" id="app">
   <div class="vp" id="vp">
+    <svg class="grid" aria-hidden="true"><defs><pattern id="plus" patternUnits="userSpaceOnUse" width="56" height="56"><path d="M24.5 28.5h8M28.5 24.5v8"/></pattern></defs><rect width="100%" height="100%" fill="url(#plus)"/></svg>
     <h1 class="hud">Resolving Data</h1>
 
     <div class="world" id="world">
@@ -302,6 +305,7 @@ h2 { font: inherit; letter-spacing: .02em; margin-right: auto; white-space: nowr
           </div>
         </div>
       </section>
+      <svg class="ports" id="ports" width="1" height="1" aria-hidden="true"></svg>
     </div>
 
     <div class="hud hud-zoom seg zoom" role="group" aria-label="Zoom"><div class="seg-b">
@@ -327,8 +331,8 @@ h2 { font: inherit; letter-spacing: .02em; margin-right: auto; white-space: nowr
     const NS = 'http://www.w3.org/2000/svg';
     const mk = (tag, parent) => parent.appendChild(document.createElementNS(NS, tag));
     const EDGES = ['badge', 'dot', 'plain', 'rich'].map(id => {
-      const g = mk('g', svg); g.dataset.s = 'empty';
-      return { id, g, path: mk('path', g), a: mk('circle', g), b: mk('circle', g) };
+      const g = mk('g', svg), pg = mk('g', $('#ports')); g.dataset.s = pg.dataset.s = 'empty';
+      return { id, g, pg, path: mk('path', g), a: mk('circle', pg), b: mk('circle', pg) };
     });
     EDGES.forEach(e => [e.a, e.b].forEach(c => c.setAttribute('r', 4.5)));
     const ROWS = {}, GLYPH = '#*+=/-.:';
@@ -368,8 +372,7 @@ h2 { font: inherit; letter-spacing: .02em; margin-right: auto; white-space: nowr
         for (const k in D) move(k, R[k].x + D[k][0], R[k].y + D[k][1]);
       }
       world.style.width = W + 'px'; world.style.height = H + 'px';
-      svg.setAttribute('width', W); svg.setAttribute('height', H);
-      if (flow) { world.style.transform = 'none'; ['--gs', '--gx', '--gy'].forEach(v => vp.style.removeProperty(v)); }
+      if (flow) { world.style.transform = 'none'; grid(56, 0, 0); }
       else if (lastFlow !== flow) fit(); else apply();
       lastFlow = flow;
       draw();
@@ -410,9 +413,16 @@ h2 { font: inherit; letter-spacing: .02em; margin-right: auto; white-space: nowr
         e.b.setAttribute('cx', bx); e.b.setAttribute('cy', py);
       });
     }
+    /* one plus per cell, centred; the cell follows pan and zoom, the plus keeps its size */
+    const pat = $('#plus'), plus = pat.querySelector('path');
+    function grid(g, x, y) {
+      const c = Math.round(g / 2) + 0.5;
+      pat.setAttribute('width', g); pat.setAttribute('height', g); pat.setAttribute('x', x); pat.setAttribute('y', y);
+      plus.setAttribute('d', `M${c - 4} ${c}h8M${c} ${c - 4}v8`);
+    }
     function apply() {
       world.style.transform = `translate(${Math.round(V.x)}px,${Math.round(V.y)}px) scale(${V.s})`;
-      vp.style.setProperty('--gs', 24 * V.s + 'px'); vp.style.setProperty('--gx', Math.round(V.x) + 'px'); vp.style.setProperty('--gy', Math.round(V.y) + 'px');
+      grid(56 * V.s, Math.round(V.x), Math.round(V.y));
       zl.textContent = Math.round(V.s * 100) + '%';
     }
     function fit() {
@@ -472,7 +482,7 @@ h2 { font: inherit; letter-spacing: .02em; margin-right: auto; white-space: nowr
     const WORD = { empty: 'BLANK', resolving: 'RESOLVING', locked: 'LOCKED', clearing: 'CLEARING' };
     function set(id, st, v) {
       const e = EDGES.find(x => x.id === id); if (!e) return;
-      e.g.dataset.s = st; el[id].dataset.s = st; $('#chip-' + id).textContent = WORD[st] || WORD.empty;
+      e.g.dataset.s = e.pg.dataset.s = st; el[id].dataset.s = st; $('#chip-' + id).textContent = WORD[st] || WORD.empty;
       const r = ROWS[id]; r.st = st; r.el.dataset.s = st; if (v != null) r.val = v;
       paint();
     }
