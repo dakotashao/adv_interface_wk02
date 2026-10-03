@@ -12,10 +12,9 @@
 <title>Reading Pile</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
 <style>
-/* Layout: one soft canvas with the phone at its centre (every state plays out on its screen), then one centred row of demo controls. Nothing else. */
+/* Layout: the phone centred on a flat ground (every state plays out on its screen), then one centred row of demo controls. Nothing else. */
 :root{
-  --ground:#efeff1;
-  --canvas:#f5f5f7;
+  --ground:#f6f6f6;
   --ctl:#ffffff;
   --press:#eeeef1;
   --cline:#dfe0e4;
@@ -48,13 +47,13 @@
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
-    --ground:#0f1012;--canvas:#131517;--ctl:#202226;--press:#2c2f34;--cline:#2a2c31;--cink:#eeeff1;--cmuted:#9a9ea5;--screen:#000000;--ink:#FFFFFF;--muted:#98989F;--line:#38383A;--fill:rgba(118,118,128,.28);--pick:rgba(118,118,128,.5);
+    --ground:#0f1012;--ctl:#202226;--press:#2c2f34;--cline:#2a2c31;--cink:#eeeff1;--cmuted:#9a9ea5;--screen:#000000;--ink:#FFFFFF;--muted:#98989F;--line:#38383A;--fill:rgba(118,118,128,.28);--pick:rgba(118,118,128,.5);
     --tint:#0A84FF;--on-tint:#FFFFFF;--pop:#FF453A;--on-pop:#FFFFFF;--mat:rgba(44,44,46,.96);--bar:rgba(22,22,24,.9);
     --shadow:0 10px 30px rgba(0,0,0,.5),0 0 0 .5px rgba(255,255,255,.14);--fall:#FFFFFF;--frame:#2C2C2E;--frame-edge:#6A6A70;--device-shadow:0 30px 50px -24px rgba(0,0,0,.8);color-scheme:dark;
   }
 }
 :root[data-theme="dark"]{
-  --ground:#0f1012;--canvas:#131517;--ctl:#202226;--press:#2c2f34;--cline:#2a2c31;--cink:#eeeff1;--cmuted:#9a9ea5;--screen:#000000;--ink:#FFFFFF;--muted:#98989F;--line:#38383A;--fill:rgba(118,118,128,.28);--pick:rgba(118,118,128,.5);
+  --ground:#0f1012;--ctl:#202226;--press:#2c2f34;--cline:#2a2c31;--cink:#eeeff1;--cmuted:#9a9ea5;--screen:#000000;--ink:#FFFFFF;--muted:#98989F;--line:#38383A;--fill:rgba(118,118,128,.28);--pick:rgba(118,118,128,.5);
   --tint:#0A84FF;--on-tint:#FFFFFF;--pop:#FF453A;--on-pop:#FFFFFF;--mat:rgba(44,44,46,.96);--bar:rgba(22,22,24,.9);
   --shadow:0 10px 30px rgba(0,0,0,.5),0 0 0 .5px rgba(255,255,255,.14);--fall:#FFFFFF;--frame:#2C2C2E;--frame-edge:#6A6A70;--device-shadow:0 30px 50px -24px rgba(0,0,0,.8);color-scheme:dark;
 }
@@ -65,7 +64,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 
 .page{max-width:1000px;margin:0 auto;padding-inline:20px;padding-block:28px 40px;display:flex;flex-direction:column;gap:20px}
-.canvas{display:flex;justify-content:center;padding:36px 16px;background:var(--canvas);border:1px solid var(--cline);border-radius:28px}
+.canvas{display:flex;justify-content:center;padding:36px 16px}
 
 /* ---------- screen ---------- */
 .fit{flex:none;width:calc(415px * var(--z,1));height:calc(874px * var(--z,1))}
@@ -97,7 +96,7 @@ svg{width:25px;height:25px;fill:none;stroke:currentColor;stroke-width:1.7;stroke
 #fx{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:5}
 .pellet{position:absolute;left:0;top:0;width:10px;height:10px;border-radius:50%;background:var(--pop);z-index:6;pointer-events:none}
 
-.tabbar{position:absolute;left:0;right:0;bottom:0;height:72px;display:flex;align-items:flex-start;border-top:.5px solid var(--line);background:var(--bar);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px)}
+.tabbar{position:absolute;left:0;right:0;bottom:0;height:78px;padding-top:8px;display:flex;align-items:flex-start;border-top:.5px solid var(--line);background:var(--bar);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px)}
 .tab{flex:1;height:49px;border:0;background:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:var(--muted);transition:color .2s}
 .tab[aria-current="page"],.tab.pull{color:var(--tint)}
 .ico{position:relative;display:block}
@@ -160,7 +159,7 @@ svg{width:25px;height:25px;fill:none;stroke:currentColor;stroke-width:1.7;stroke
 /* Thumbnail mode (page opened with #thumb): just the phone, centred on a flat ground, no controls. */
 html.thumb body{background:#f6f6f6}
 html.thumb .page{max-width:none;min-height:100vh;padding:0;justify-content:center}
-html.thumb .canvas{padding:0;background:transparent;border:0;border-radius:0}
+html.thumb .canvas{padding:0}
 html.thumb .controls{display:none}
 </style>
 </head>
