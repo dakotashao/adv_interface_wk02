@@ -171,9 +171,15 @@ td:last-child{text-align:right;color:var(--muted);font-variant-numeric:tabular-n
   .open [data-drop] .ch,.tip.open .ch,.tip.open.falling .ch{animation:none}
   .note,.note.phys,.panel,.panel.open,.tip,.tip.open,.shell,.badge,.bell,.bell svg,.btn,.clean,.raw{transition:none}
 }
+
+/* Thumbnail mode (page opened with #thumb): just the phone, centred on a flat ground, no dock. */
+html.thumb body{background:#f6f6f6}
+html.thumb .page{padding-block:0}
+html.thumb .dock{display:none}
 </style>
 </head>
 <body>
+<script>if (location.hash === "#thumb") document.documentElement.classList.add("thumb");</script>
 <main class="page">
   <div class="fit">
     <div class="device">

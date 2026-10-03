@@ -156,9 +156,16 @@ svg{width:25px;height:25px;fill:none;stroke:currentColor;stroke-width:1.7;stroke
   .tip.open,.tip.open [data-drop] .ch,.tip.open .tip-pron,.tip.open .tip-body,.tip.open .tip-zh,.tip.open .tip-action{animation:none}
   .btn,.badge,.w,.tab{transition:none}
 }
+
+/* Thumbnail mode (page opened with #thumb): just the phone, centred on a flat ground, no controls. */
+html.thumb body{background:#f6f6f6}
+html.thumb .page{max-width:none;min-height:100vh;padding:0;justify-content:center}
+html.thumb .canvas{padding:0;background:transparent;border:0;border-radius:0}
+html.thumb .controls{display:none}
 </style>
 </head>
 <body>
+<script>if (location.hash === "#thumb") document.documentElement.classList.add("thumb");</script>
 <main class="page">
   <div class="canvas" id="canvas">
     <div class="fit" id="fit">
