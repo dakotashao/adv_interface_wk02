@@ -10,24 +10,23 @@
 <style>
 body{margin:0}
 [hidden]{display:none!important}
-/* Layout: a pannable canvas on a blue ground scattered with plus signs. A Resolver panel in the centre lists
+/* Layout: a pannable canvas on a white ground scattered with plus signs; the frames are blue. A Resolver panel in the centre lists
    its four outputs, one port and one live value each, and is wired to four frames: the two badges
    on its left, the two tooltips on its right. A tooltip opens as one more node. Every header
    is a solid white bar. Every frame can be dragged (tooltips by their header) and the wires follow. Every wire
    is the same line: a round port, level, a rounded right-angle turn, level, a round port. Every
    frame is a rounded hairline panel: a header row with a state light, a path name and a state
-   chip, then the body. Under 760px the frames stack and the page scrolls. Blue and white only;
-   solid white means locked. */
+   chip, then the body. Under 760px the frames stack and the page scrolls. Blue and white only. */
 :root {
-  color-scheme: dark;
-  --bg: #3462db;
+  color-scheme: light;
+  --bg: #ffffff;            /* the canvas ground */
+  --blue: #3462db;          /* frames, wires, ports */
   --fg: #ffffff;
   --muted: rgba(255, 255, 255, .74);
   --dim: rgba(255, 255, 255, .46);
   --line: rgba(255, 255, 255, .36);
   --stage: rgba(255, 255, 255, .1);
-  --edge: rgba(255, 255, 255, .5);
-  --ring: #4872df;          /* the frame fill, flattened: the cut-out around badges and icon details */
+  --ring: #3462db;          /* the frame fill: also the cut-out around badges and icon details */
   --wait: #8ea6ec;          /* an unresolved badge */
   --ink: #2748b4;           /* type on white */
   --ink-dim: rgba(39, 72, 180, .4);
@@ -49,36 +48,34 @@ button { font: inherit; color: inherit; }
 .vp { position: relative; height: 100%; overflow: hidden; touch-action: none; cursor: grab; }
 /* the canvas ground: sparse plus signs. They pan and spread with the world and stay one size. */
 .grid { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
-.grid path { fill: none; stroke: rgba(255, 255, 255, .42); stroke-width: 1; shape-rendering: crispEdges; }
+.grid path { fill: none; stroke: #c9cbd1; stroke-width: 1; shape-rendering: crispEdges; }
 .vp.is-panning { cursor: grabbing; user-select: none; }
 .vp.is-panning .world { pointer-events: none; }
 .world { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
 .is-flow .vp { height: auto; overflow: visible; touch-action: auto; cursor: auto; }
 .is-flow .world { position: relative; }
 .hud { position: absolute; z-index: 20; cursor: default; }
-h1 { left: 22px; top: 20px; font: 500 13px/1.2 var(--mono); pointer-events: none; }
-.hud-zoom { left: 20px; bottom: 20px; }
+h1 { left: 22px; top: 20px; color: var(--ink); font: 500 13px/1.2 var(--mono); pointer-events: none; }
+.hud-zoom { left: 22px; bottom: 18px; }
 .is-flow h1 { position: static; padding: 20px 20px 0; }
 .is-flow .hud-zoom { display: none; }
 
 .wires { position: absolute; left: 0; top: 0; width: 1px; height: 1px; overflow: visible; pointer-events: none; }
-.wires path { fill: none; stroke: var(--line); stroke-width: 1.25; }
+.wires path { fill: none; stroke: rgba(52, 98, 219, .4); stroke-width: 1.25; }
 .ports { position: absolute; left: 0; top: 0; z-index: 100000; overflow: visible; pointer-events: none; }
-.ports circle { fill: var(--bg); stroke: var(--fg); stroke-width: 1.25; }
-.ports g[data-s="locked"] circle { fill: var(--fg); stroke: var(--bg); stroke-width: 1.5; }
-.wires g[data-s="locked"] path { stroke: rgba(255, 255, 255, .9); }
-.wires g[data-s="resolving"] path, .wires g[data-s="clearing"] path { stroke: var(--fg); stroke-dasharray: 3 7; animation: flow 420ms steps(5) infinite; }
+.ports circle { fill: var(--bg); stroke: var(--blue); stroke-width: 1.25; }
+.ports g[data-s="locked"] circle { fill: var(--blue); stroke: var(--bg); stroke-width: 1.5; }
+.wires g[data-s="locked"] path { stroke: var(--blue); }
+.wires g[data-s="resolving"] path, .wires g[data-s="clearing"] path { stroke: var(--blue); stroke-dasharray: 3 7; animation: flow 420ms steps(5) infinite; }
 .wires g[data-s="clearing"] path { animation-direction: reverse; animation-duration: 300ms; }
 @keyframes flow { to { stroke-dashoffset: -10; } }
 
 /* ---------- frames: rounded hairline panel, header row with light, path and chip ---------- */
-.node, .frame { position: relative; isolation: isolate; border: 1px solid var(--edge); border-radius: 9px; background: var(--ring);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .1), 0 24px 40px -28px rgba(12, 28, 96, .7); }
+.node, .frame { position: relative; isolation: isolate; border: 1px solid var(--blue); border-radius: 9px; background: var(--ring);
+  box-shadow: 0 22px 36px -26px rgba(12, 28, 96, .55); }
 .node { position: absolute; cursor: default; }
 .node-h { cursor: grab; }
 .is-flow .node-h { cursor: default; }
-.node:hover, .node:focus-within { border-color: rgba(255, 255, 255, .7); }
-.node[data-s="locked"], .tip[data-step="3"] .frame { border-color: rgba(255, 255, 255, .85); }
 .node-h, .fh { height: 34px; padding: 0 8px 0 12px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--line);
   background: var(--fg); color: var(--ink); border-bottom-color: var(--fg); border-radius: 8px 8px 0 0; font: 500 12px/1.4 var(--mono); }
 h2 { font: inherit; letter-spacing: .02em; margin-right: auto; white-space: nowrap; }
@@ -162,18 +159,21 @@ h2 { font: inherit; letter-spacing: .02em; margin-right: auto; white-space: nowr
 @keyframes snap { 0% { translate: 0 -2px; } 45% { translate: 0 1px; } 100% { translate: 0 0; } }
 
 /* ---------- tooltip: one more node, wired from the frame's edge ---------- */
-.conn { position: absolute; z-index: 3; left: var(--ax); top: -6px; width: 58px; height: 28px; overflow: visible; pointer-events: none; fill: none; stroke: var(--fg); stroke-width: 1.25; }
+/* the wire is white where it crosses the frame's blue body and blue once it is out on the ground */
+.conn { position: absolute; z-index: 3; left: var(--ax); top: -6px; width: 58px; height: 28px; overflow: visible; pointer-events: none; fill: none; stroke: var(--blue); stroke-width: 1.25; }
+.conn .in { stroke: var(--fg); }
 .conn path { stroke-dasharray: 80; stroke-dashoffset: 80; }
 .wrap[data-link="1"] .conn path { stroke-dashoffset: 53; }
 .wrap[data-link="2"] .conn path { stroke-dashoffset: 27; }
 .wrap[data-link="3"] .conn path { stroke-dashoffset: 0; }
 .conn circle { fill: var(--fg); stroke: none; visibility: hidden; }
-.conn .b { stroke: var(--bg); stroke-width: 1.5; }
+.conn .a { stroke: var(--blue); stroke-width: 1.25; }
+.conn .b { fill: var(--blue); stroke: var(--fg); stroke-width: 1.5; }
 .wrap[data-link] .conn .a, .wrap[data-link="3"] .conn .b { visibility: visible; }
 .tip { position: absolute; left: 76px; top: -23px; padding-left: calc(var(--ax) - 76px + 58px); z-index: 2; }
 .tip[data-step="0"] { visibility: hidden; }
 .is-flow .tip { translate: none !important; }
-.frame { color: var(--fg); --unres: var(--dim); font: 400 12px/1.4 var(--mono); transform-origin: 0 17px; }
+.frame { background: var(--ink); border-color: var(--ink); color: var(--fg); --unres: var(--dim); font: 400 12px/1.4 var(--mono); transform-origin: 0 17px; }
 .tip[data-step="1"] .frame { scale: .3 1; }
 .tip[data-step="2"] .frame { scale: .65 1; }
 .fb { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
@@ -184,13 +184,20 @@ h2 { font: inherit; letter-spacing: .02em; margin-right: auto; white-space: nowr
 .pg { display: flex; flex-direction: column; gap: 4px; }
 .act { margin-top: 6px; padding: 5px 10px; border: 0; border-radius: var(--r); background: transparent; box-shadow: inset 0 0 0 1px var(--dim); color: var(--fg); font: 500 12px/1.2 var(--mono); white-space: pre; cursor: default; }
 .act[data-ready="true"] { background: var(--fg); box-shadow: none; color: var(--ink); cursor: pointer; }
-@media (hover: hover) { .act[data-ready="true"]:hover { background: var(--ink); color: var(--fg); } }
+@media (hover: hover) { .act[data-ready="true"]:hover { background: var(--blue); color: var(--fg); } }
 
 /* ---------- switches ---------- */
-.seg-b { display: inline-flex; border: 1px solid var(--line); border-radius: var(--r); background: var(--bg); }
+.seg-b { display: inline-flex; border: 1px solid var(--line); border-radius: var(--r); background: var(--ink); }
+.hud .seg button:focus-visible { outline-color: var(--ink); }
 .seg button { padding: 6px 8px; border: 0; background: transparent; color: var(--fg); font: 400 12px/1.2 var(--mono); cursor: pointer; border-radius: 3px; }
 .seg button[aria-pressed="true"] { background: var(--fg); color: var(--ink); }
-.zoom output { min-width: 46px; text-align: center; font: 400 12px/1 var(--mono); align-self: center; }
+/* the zoom bar: bare bracketed commands in a row in the bottom-left corner */
+.zoom .seg-b { align-items: center; gap: 12px; border: 0; background: none; }
+.zoom button { padding: 3px 0; color: var(--ink); white-space: pre; }
+.zoom button::before { content: "[ "; color: var(--ink-dim); }
+.zoom button::after { content: " ]"; color: var(--ink-dim); }
+@media (hover: hover) { .zoom button:hover { background: var(--blue); color: var(--fg); } .zoom button:hover::before, .zoom button:hover::after { color: var(--fg); } }
+.zoom output { display: none; }
 
 /* ---------- stacked on a phone: the tooltip opens inside its own frame ---------- */
 .is-flow .node--tip .node-b { align-items: flex-start; padding: 44px 2px 18px; min-height: 126px; }
@@ -206,7 +213,7 @@ h2 { font: inherit; letter-spacing: .02em; margin-right: auto; white-space: nowr
 
 <div class="app" id="app">
   <div class="vp" id="vp">
-    <svg class="grid" aria-hidden="true"><defs><pattern id="plus" patternUnits="userSpaceOnUse" width="56" height="56"><path d="M24.5 28.5h8M28.5 24.5v8"/></pattern></defs><rect width="100%" height="100%" fill="url(#plus)"/></svg>
+    <svg class="grid" aria-hidden="true"><defs><pattern id="plus" patternUnits="userSpaceOnUse" width="56" height="56"><path d="M26 28.5h5M28.5 26v5"/></pattern></defs><rect width="100%" height="100%" fill="url(#plus)"/></svg>
     <h1 class="hud">Resolving Data</h1>
 
     <div class="world" id="world">
@@ -273,7 +280,7 @@ h2 { font: inherit; letter-spacing: .02em; margin-right: auto; white-space: nowr
               <span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="s" d="M6 3h8l4 4v14H6z"/><path class="d" d="M14 3v4h4"/></svg></span>
               <span class="lbl">File</span>
             </button>
-            <svg class="conn" viewBox="0 0 58 28" aria-hidden="true"><path pathLength="80" d="M0 28H20Q29 28 29 19V9Q29 0 38 0H58"/><circle class="a" cx="0" cy="28" r="4"/><circle class="b" cx="58" cy="0" r="4.5"/></svg>
+            <svg class="conn" viewBox="0 0 58 28" aria-hidden="true"><clipPath id="clip-s3"><rect/></clipPath><path class="out" pathLength="80" d="M0 28H20Q29 28 29 19V9Q29 0 38 0H58"/><path class="in" clip-path="url(#clip-s3)" pathLength="80" d="M0 28H20Q29 28 29 19V9Q29 0 38 0H58"/><circle class="a" cx="0" cy="28" r="4"/><circle class="b" cx="58" cy="0" r="4.5"/></svg>
             <div class="tip" id="s3-tip" data-step="0" aria-hidden="true">
               <div class="frame plain"><div class="fh line"><span class="static">LAST </span><span class="reel flap" id="p-word" style="--rw:8"></span></div><div class="fb line"><span class="reel flap" id="p-date" style="--rw:12"></span><span class="cur" aria-hidden="true">_</span></div></div>
             </div>
@@ -290,7 +297,7 @@ h2 { font: inherit; letter-spacing: .02em; margin-right: auto; white-space: nowr
               <span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="s" d="M6 3h8l4 4v14H6z"/><path class="d" d="M14 3v4h4"/></svg></span>
               <span class="lbl">File</span>
             </button>
-            <svg class="conn" viewBox="0 0 58 28" aria-hidden="true"><path pathLength="80" d="M0 28H20Q29 28 29 19V9Q29 0 38 0H58"/><circle class="a" cx="0" cy="28" r="4"/><circle class="b" cx="58" cy="0" r="4.5"/></svg>
+            <svg class="conn" viewBox="0 0 58 28" aria-hidden="true"><clipPath id="clip-s4"><rect/></clipPath><path class="out" pathLength="80" d="M0 28H20Q29 28 29 19V9Q29 0 38 0H58"/><path class="in" clip-path="url(#clip-s4)" pathLength="80" d="M0 28H20Q29 28 29 19V9Q29 0 38 0H58"/><circle class="a" cx="0" cy="28" r="4"/><circle class="b" cx="58" cy="0" r="4.5"/></svg>
             <div class="tip" id="s4-tip" data-step="0">
               <div class="frame rich" role="group" aria-label="File status">
                 <div class="fh line" aria-hidden="true"><span class="reel flap" id="r-head" style="--rw:12"></span></div>
@@ -309,10 +316,10 @@ h2 { font: inherit; letter-spacing: .02em; margin-right: auto; white-space: nowr
     </div>
 
     <div class="hud hud-zoom seg zoom" role="group" aria-label="Zoom"><div class="seg-b">
-      <button type="button" id="z-out" aria-label="Zoom out">−</button>
-      <output id="z-l">100%</output>
       <button type="button" id="z-in" aria-label="Zoom in">+</button>
-      <button type="button" id="z-fit">Fit</button>
+      <button type="button" id="z-out" aria-label="Zoom out">−</button>
+      <button type="button" id="z-fit" aria-label="Fit to window">fit</button>
+      <output id="z-l">100%</output>
     </div></div>
   </div>
 </div>
@@ -418,7 +425,7 @@ h2 { font: inherit; letter-spacing: .02em; margin-right: auto; white-space: nowr
     function grid(g, x, y) {
       const c = Math.round(g / 2) + 0.5;
       pat.setAttribute('width', g); pat.setAttribute('height', g); pat.setAttribute('x', x); pat.setAttribute('y', y);
-      plus.setAttribute('d', `M${c - 4} ${c}h8M${c} ${c - 4}v8`);
+      plus.setAttribute('d', `M${c - 2.5} ${c}h5M${c} ${c - 2.5}v5`);
     }
     function apply() {
       world.style.transform = `translate(${Math.round(V.x)}px,${Math.round(V.y)}px) scale(${V.s})`;
@@ -728,13 +735,18 @@ h2 { font: inherit; letter-spacing: .02em; margin-right: auto; white-space: nowr
     const run = runner();
     let isOpen = false, timer = null, lastPtr = 'mouse';
     /* Dragged by its header, the tooltip keeps its wire; once moved it stays open until a click elsewhere. */
-    const fh = tip.querySelector('.fh'), cp = wrap.querySelector('.conn path'), cb = wrap.querySelector('.conn .b'), off = [0, 0];
+    const fh = tip.querySelector('.fh'), conn = wrap.querySelector('.conn'), cps = conn.querySelectorAll('path'), cb = conn.querySelector('.b'), off = [0, 0];
+    const body = wrap.closest('.node-b'), clip = conn.querySelector('clipPath rect');
     let grab = null;
     function link() {
       const ox = Canvas.flow() ? 0 : off[0], oy = Canvas.flow() ? 0 : off[1], ex = 58 + ox, ey = oy;
       tip.style.translate = ox || oy ? `${ox}px ${oy}px` : '';
       const mx = Math.round(ex / 2), up = ey - 31;
-      cp.setAttribute('d', Canvas.rounded(ex >= 28 ? [[0, 28], [mx, 28], [mx, ey], [ex, ey]] : [[0, 28], [14, 28], [14, up], [ex - 14, up], [ex - 14, ey], [ex, ey]], 9));
+      const d = Canvas.rounded(ex >= 28 ? [[0, 28], [mx, 28], [mx, ey], [ex, ey]] : [[0, 28], [14, 28], [14, up], [ex - 14, up], [ex - 14, ey], [ex, ey]], 9);
+      cps.forEach(p => p.setAttribute('d', d));
+      /* the white copy of the wire shows only inside the frame's body */
+      const k = Canvas.flow() ? 1 : Canvas.scale(), a = body.getBoundingClientRect(), o = conn.getBoundingClientRect();
+      [['x', a.left - o.left], ['y', a.top - o.top], ['width', a.width], ['height', a.height]].forEach(([n, v]) => clip.setAttribute(n, v / k));
       cb.setAttribute('cx', ex); cb.setAttribute('cy', ey);
     }
     fh.addEventListener('pointerdown', e => {

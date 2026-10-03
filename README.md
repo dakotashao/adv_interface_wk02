@@ -1,7 +1,7 @@
 # adv_interface_wk02
 
 Advanced Interface, week 2: Badges & Tooltips.
-Seven sets. Each set is one badge and one tooltip that share a tone.
+Six sets. Each set is one badge and one tooltip that share a tone.
 
 | Set | Tone | Concept | Prototype |
 |---|---|---|---|
@@ -11,6 +11,5 @@ Seven sets. Each set is one badge and one tooltip that share a tone.
 | 4 | Nostalgic | Resolving Data | [Open](https://dakotashao.github.io/adv_interface_wk02/nostalgic/) |
 | 5 | Playful | Reading Pile | [Open](https://dakotashao.github.io/adv_interface_wk02/playful-reading/) |
 | 6 | Ethereal | Liquid Glass | [Open](https://dakotashao.github.io/adv_interface_wk02/glass/) |
-| 7 | Nostalgic | Resolving Data, White | [Open](https://dakotashao.github.io/adv_interface_wk02/nostalgic-white/) |
 
 Each set lives in its own folder with a self-contained `index.html`.
