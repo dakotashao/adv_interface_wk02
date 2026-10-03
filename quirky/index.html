@@ -303,9 +303,16 @@ h2 { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: -0.005em; }
 .check input:focus-visible { outline: none; }
 .check input { width: 16px; height: 16px; margin: 0; accent-color: var(--ink); }
 .notice { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px; color: var(--muted); font-size: 14px; }
+
+/* Thumbnail mode (page opened with #thumb): no controls, the canvas fills the frame. */
+.thumb body { background: var(--stage); }
+.thumb .page { max-width: none; padding: 0; gap: 0; }
+.thumb .stage { height: 100vh; border: 0; border-radius: 0; }
+.thumb .controls, .thumb .notice { display: none; }
 </style>
 </head>
 <body>
+<script>if (location.hash === "#thumb") document.documentElement.classList.add("thumb");</script>
 <main class="page">
   <div class="stage">
     <nav class="bar" id="bar" aria-label="Demo navigation">
@@ -841,6 +848,13 @@ h2 { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: -0.005em; }
   setTimeout(() => { if (!document.hidden && current === '3') drop('3'); }, 700);
 
   window.__weight = { drop, select, openTip, closeTip };   // handles for scripted demos
+
+  // In thumbnail mode nobody can click, so the bar demonstrates itself: a badge lands, gets flicked off, a heavier one lands.
+  if (document.documentElement.classList.contains('thumb')) {
+    const loop = ['none', '12', 'none', '99+', 'none', '3'];
+    let step = 0;
+    setInterval(() => { if (!document.hidden) select(loop[step++ % loop.length]); }, 2600);
+  }
 })();
 </script>
 </body>
