@@ -555,12 +555,12 @@ h2 { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: -0.005em; }
     return Math.cos(TAU * tau / RING_MS) * Math.exp(-3.2 * u) * Math.pow(1 - u, 1.2);
   }
   const stage = document.querySelector('.stage'), scene = $('scene');
-  // Scale the scene to the window: as large as leaves room for the rich tooltip under the bar, and never
-  // wider than about a third of the window. The thumbnail keeps the natural size.
+  // Scale the scene gently with the window: the bar takes about a fifth of the window's width, at most 1.5x,
+  // and always leaves room for the rich tooltip under it. The thumbnail keeps the natural size.
   let K = 1;
   function fitScene() {
     const thumb = document.documentElement.classList.contains('thumb');
-    K = thumb ? 1 : Math.max(1, Math.min((stage.clientHeight / 2 - 12) / 204, stage.clientWidth * 0.34 / 226, 2.4));
+    K = thumb ? 1 : Math.max(1, Math.min((stage.clientHeight / 2 - 12) / 204, stage.clientWidth * 0.2 / 226, 1.5));
     scene.style.setProperty('--k', K.toFixed(3));
   }
   fitScene();
