@@ -86,7 +86,6 @@
   .ico { fill: none; stroke: var(--muted); stroke-width: 1.25; stroke-linecap: round; stroke-linejoin: round; }
   .ico .shape, .ico .detail { transition: fill .25s ease, stroke .25s ease; }
   .ico .shape { fill: transparent; }
-  .ico.anchor:hover, .ico.anchor:focus-visible { stroke: var(--on-surface); }   /* stays legible inside the light */
   .ico.on .shape { fill: var(--on-surface); stroke: var(--on-surface); }   /* selected: the outline fills solid */
   .ico.on .detail { stroke: var(--surface); }
   .anchor { cursor: pointer; outline: none; }
@@ -96,8 +95,7 @@
   #num, .tipText, .rTitle, .rBody, .rAct { font-family: var(--ui); pointer-events: none; stroke: none; }
   #num { fill: var(--on-liquid); font-weight: 600; font-size: 10.5px; text-anchor: middle; }
   #badge, #cur, #liq, #blueWrap, #cTipA { pointer-events: none; }
-  #glowOut, #glowMid, #glowCore, #barRim { pointer-events: none; }
-  #barRim { fill: none; stroke: var(--liquid); stroke-width: 1.8; stroke-linejoin: round; }
+  #glow { pointer-events: none; }
   @media (hover: hover) and (pointer: fine) { #stage .ico.anchor { cursor: none; } }   /* inside the bar the pointer is the light itself */
   .tipText { fill: var(--on-liquid); font-weight: 500; font-size: 12px; text-anchor: middle; }
   .rTitle { fill: var(--on-surface); font-weight: 600; font-size: 12.5px; }
@@ -148,40 +146,16 @@
           <rect x="230" y="196" width="220" height="52" rx="16" fill="#000" filter="url(#soft)"/>
         </mask>
         <clipPath id="barClip"><rect x="224" y="190" width="232" height="64" rx="22"/></clipPath>
-        <!-- The pointer's light, in layers: a wide bloom behind the glass, a saturated pool in it, a hot core, and the rim catching it. -->
-        <radialGradient id="gOut">
-          <stop offset="0" style="stop-color: var(--liquid)" stop-opacity=".66"/>
-          <stop offset=".28" style="stop-color: var(--liquid)" stop-opacity=".36"/>
-          <stop offset=".62" style="stop-color: var(--liquid)" stop-opacity=".11"/>
+        <radialGradient id="glowGrad">
+          <stop offset="0" style="stop-color: var(--liquid)" stop-opacity=".13"/>
+          <stop offset=".5" style="stop-color: var(--liquid)" stop-opacity=".05"/>
           <stop offset="1" style="stop-color: var(--liquid)" stop-opacity="0"/>
         </radialGradient>
-        <radialGradient id="gMid">
-          <stop offset="0" style="stop-color: var(--liquid)" stop-opacity=".9"/>
-          <stop offset=".42" style="stop-color: var(--liquid)" stop-opacity=".46"/>
-          <stop offset="1" style="stop-color: var(--liquid)" stop-opacity="0"/>
-        </radialGradient>
-        <radialGradient id="gCore">
-          <stop offset="0" stop-color="#fff" stop-opacity=".96"/>
-          <stop offset=".4" stop-color="#CFE2FF" stop-opacity=".7"/>
-          <stop offset="1" stop-color="#7FB0FF" stop-opacity="0"/>
-        </radialGradient>
-        <radialGradient id="gRim"><stop offset="0" stop-color="#fff"/><stop offset=".5" stop-color="#777"/><stop offset="1" stop-color="#000"/></radialGradient>
-        <mask id="rimLight" maskUnits="userSpaceOnUse" x="150" y="40" width="380" height="320"><circle id="rimLightC" r="0" fill="url(#gRim)"/></mask>
-        <!-- Blue liquid gives off light too: a tight halo and a wide one under every blue shape. -->
-        <filter id="bloom" filterUnits="userSpaceOnUse" x="130" y="20" width="420" height="350" color-interpolation-filters="sRGB">
-          <feGaussianBlur in="SourceGraphic" stdDeviation="3.5" result="b1"/>
-          <feGaussianBlur in="SourceGraphic" stdDeviation="11" result="b2"/>
-          <feComponentTransfer in="b1" result="g1"><feFuncA type="linear" slope=".6"/></feComponentTransfer>
-          <feComponentTransfer in="b2" result="g2"><feFuncA type="linear" slope=".9"/></feComponentTransfer>
-          <feMerge><feMergeNode in="g2"/><feMergeNode in="g1"/><feMergeNode in="SourceGraphic"/></feMerge>
-        </filter>
         <radialGradient id="numGrad"><stop offset="0" stop-color="#fff"/><stop offset=".55" stop-color="#fff"/><stop offset="1" stop-color="#000"/></radialGradient>
         <mask id="numMask" maskUnits="userSpaceOnUse" x="0" y="0" width="680" height="430"><circle id="numMaskC" r="0" fill="url(#numGrad)"/></mask>
         <mask id="mA" maskUnits="userSpaceOnUse" x="0" y="0" width="680" height="430"><ellipse id="mAe" rx="0" ry="0" fill="url(#numGrad)"/></mask>
         <mask id="mR" maskUnits="userSpaceOnUse" x="0" y="0" width="680" height="430"><ellipse id="mRe" rx="0" ry="0" fill="url(#numGrad)"/></mask>
       </defs>
-
-      <circle id="glowOut" r="150" fill="url(#gOut)" opacity="0"/>
 
       <g filter="url(#gooW)">
         <path id="bar" class="w"/>
@@ -192,11 +166,10 @@
         <rect id="wTipA" class="w" width="0" height="0"/>
       </g>
 
+      <!-- the pointer, inside the bar only: a small pool of the liquid's light under the surface -->
       <g clip-path="url(#barClip)">
-        <circle id="glowMid" r="56" fill="url(#gMid)" opacity="0"/>
-        <circle id="glowCore" r="15" fill="url(#gCore)" opacity="0"/>
+        <circle id="glow" r="16" fill="url(#glowGrad)" opacity="0"/>
       </g>
-      <path id="barRim" mask="url(#rimLight)"/>
 
       <g clip-path="url(#barClip)">
         <ellipse id="tint" class="b" rx="17" ry="9" opacity="0" filter="url(#tintBlur)"/>
@@ -238,15 +211,13 @@
       <rect id="richHit" class="hit" x="184" y="80" width="150" height="112" visibility="hidden"/>
 
       <!-- everything blue that is still liquid: plain tooltip, action bead, a copy of the pointer so they can merge -->
-      <g filter="url(#bloom)">
-        <g id="liq" mask="url(#depth)">
-          <g filter="url(#gooB)">
-            <ellipse id="bRootA" class="b" rx="0" ry="0"/><line id="bNeckA" class="bl" stroke-width="0"/><rect id="bTipA" class="b" width="0" height="0"/>
-            <rect id="bAct" class="b" width="0" height="0"/>
-          </g>
+      <g id="liq" mask="url(#depth)">
+        <g filter="url(#gooB)">
+          <ellipse id="bRootA" class="b" rx="0" ry="0"/><line id="bNeckA" class="bl" stroke-width="0"/><rect id="bTipA" class="b" width="0" height="0"/>
+          <rect id="bAct" class="b" width="0" height="0"/>
         </g>
-        <rect id="cTipA" class="b" width="0" height="0"/>
       </g>
+      <rect id="cTipA" class="b" width="0" height="0"/>
       <g mask="url(#mA)"><text id="tA" class="tipText" role="tooltip" visibility="hidden">Messages</text></g>
 
       <g id="rich" visibility="hidden">
@@ -265,16 +236,15 @@
         </g>
       </g>
 
-      <g filter="url(#bloom)">
-        <g id="blueWrap">
-          <g filter="url(#gooB)">
-            <ellipse id="bRoot" class="b" rx="0" ry="0"/>
-            <line id="bNeck" class="bl" stroke-width="0"/>
-            <ellipse id="bDrop" class="b" rx="0" ry="0"/>
-          </g>
+      <g id="blueWrap">
+        <g filter="url(#gooB)">
+          <ellipse id="bRoot" class="b" rx="0" ry="0"/>
+          <line id="bNeck" class="bl" stroke-width="0"/>
+          <ellipse id="bDrop" class="b" rx="0" ry="0"/>
         </g>
-        <rect id="badge" class="b" width="0" height="0"/>
       </g>
+
+      <rect id="badge" class="b" width="0" height="0"/>
       <g mask="url(#numMask)"><text id="num" visibility="hidden">3</text></g>
 
     </svg>
@@ -311,19 +281,6 @@
     : { key, text, r: 8.5, rin: 7, w, h: 17, bx: NB.x + (w - 17) / 2, by: NB.y, k: 1.22, rel: 4.2, T: 2620 };
   const MODES = { 'dot': mk('dot', null), '1': mk('1', '1', 17), '3': mk('3', '3', 17), '12': mk('12', '12', 23), '99+': mk('99+', '99+', 30) };
   const T_OUT = 1960, T_MORPH = 640;
-  const rand = (a, b) => a + Math.random() * (b - a);
-  // Each notification is its own event: it falls from a different place, meets the bar at a different point,
-  // and what is left over later leaves from a different part of the edge.
-  function roll() {
-    const xa = Math.random() < .5 ? rand(X0 + R + 4, XE - 34) : rand(XE + 34, X1 - R - 4);
-    const p0x = Math.min(500, Math.max(180, xa + rand(-125, 125))), p0y = rand(58, 98);
-    const z = Math.random();
-    const sRel = z < .3 ? -(QA + VS / 2)                       // out of the left side
-               : z < .6 ? LS + QA + VS / 2                     // out of the right side
-               : LS + 2 * QA + VS + rand(16, LS - 16);         // or it drips from somewhere along the bottom
-    return { xa, p0: [p0x, p0y], p1: [xa + (p0x - xa) * .2, p0y + (YT - p0y) * .5], sRel };
-  }
-  const RND0 = { xa: XA, p0: [470, 72], p1: [408, 114], sRel: -(QA + VS / 2) };
 
   // Outline of the rounded bar sampled by arc length: point + outward normal.
   function pt(s) {
@@ -372,8 +329,8 @@
   const blank = () => ({ bumps: [], ripples: [], drop: null, neck: null, root: null, mask: false, tint: null, crisp: 0, num: 0 });
 
   /* ---------- badge entrance: approach → attract → merge → flow → emerge → separate → heal ---------- */
-  function seqIn(t, m, rnd = RND0) {
-    const S = blank(), { r, rin, bx, by, k } = m, XA = rnd.xa;
+  function seqIn(t, m) {
+    const S = blank(), { r, rin, bx, by, k } = m;
     const sA = sOfX(XA), sE = sOfX(XE);
 
     const bs = kf(t, [[980, sA], [1500, sE]]);
@@ -384,7 +341,7 @@
     });
     S.ripples.push({ s0: sA, t0: 900, A: 1.5 }, { s0: sE, t0: 1905, A: 1.5 });
 
-    const P0 = rnd.p0, P1 = rnd.p1, P2 = [XA, YT - rin - .5];
+    const P0 = [470, 72], P1 = [408, 114], P2 = [XA, YT - rin - .5];
     const bez = p => { const q = 1 - p; return [q * q * P0[0] + 2 * q * p * P1[0] + p * p * P2[0], q * q * P0[1] + 2 * q * p * P1[1] + p * p * P2[1]]; };
 
     if (t < 560) {                                   // arrival, curving in as the surface attracts it
@@ -424,12 +381,9 @@
   }
 
   /* ---------- badge exit: attract → merge → absorb → flow → emerge → separate → heal ---------- */
-  function seqOut(t, m, rnd = RND0) {
+  function seqOut(t, m) {
     const S = blank(), { r, bx, by, k, rel } = m;
-    const sB = sOfX(bx);
-    let sR = rnd.sRel;                                 // the point on the edge where the surplus leaves, reached the short way round
-    if (sR - sB > PER / 2) sR -= PER; else if (sB - sR > PER / 2) sR += PER;
-    const E = pt(sR), eRot = Math.atan2(E.ny, E.nx) * 180 / Math.PI;
+    const sB = sOfX(bx), sR = -(QA + VS / 2);        // sR: the middle of the bar's left side
 
     const bs = kf(t, [[830, sB], [1270, sR]]);
     S.bumps.push({
@@ -450,18 +404,17 @@
       if (t >= 280 && t < 840) S.neck = { x1: bx, y1: kf(t, [[280, by - r * .85], [470, YT + 3.5]]), x2: bx, y2: y, w: kf(t, [[280, 0], [340, 3.4], [470, 3.8], [620, 5.5], [770, 3.6], [840, 0]]) };
     } else if (t >= 1300 && t < 1810) {              // excess liquid released from the frame
       const sc = kf(t, [[1300, .5], [1430, 1], [1600, 1], [1810, 0]]);
-      const d = kf(t, [[1300, -5], [1480, 8.5], [1550, 11], [1810, 15]]);                       // out along the edge's normal…
-      const g = kf(t, [[1300, 0], [1480, 1], [1550, 3], [1810, 27, i2]]) * (1 - .55 * Math.max(0, E.ny));   // …then it falls
       S.drop = {
-        x: E.x + E.nx * d, y: E.y + E.ny * d + g,
+        x: kf(t, [[1300, X0 + 5], [1480, X0 - 8.5], [1550, X0 - 11], [1810, X0 - 15]]),
+        y: kf(t, [[1300, YC], [1480, YC + 1], [1550, YC + 3], [1810, YC + 27, i2]]),
         rx: rel * sc * kf(t, [[1300, 1], [1440, 1.3], [1550, 1]]),
-        ry: rel * sc * kf(t, [[1300, 1], [1440, .86], [1550, 1]]), rot: eRot
+        ry: rel * sc * kf(t, [[1300, 1], [1440, .86], [1550, 1], [1700, 1.12]]), rot: 0
       };
-      if (t < 1510) S.neck = { x1: E.x - E.nx * 2, y1: E.y - E.ny * 2, x2: S.drop.x, y2: S.drop.y, w: kf(t, [[1300, 2 * rel], [1420, 1.5 * rel], [1505, 0]]) };
+      if (t < 1510) S.neck = { x1: X0 + 2, y1: YC, x2: S.drop.x, y2: S.drop.y, w: kf(t, [[1300, 2 * rel], [1420, 1.5 * rel], [1505, 0]]) };
     }
     if (t >= 1280 && t < 1570) {
       const ry = kf(t, [[1280, 3], [1400, rel + 4], [1500, rel + 3], [1570, 0]]);
-      S.root = { x: E.x - E.nx * 3.5, y: E.y - E.ny * 3.5, rx: ry * .55, ry, rot: eRot };
+      S.root = { x: X0 + 3.5, y: YC, rx: ry * .55, ry };
     }
     S.mask = t >= 900;
     const tp = pt(bs);
@@ -550,7 +503,7 @@
   const el = {
     bar: $('bar'), wDrop: $('wDrop'), wNeck: $('wNeck'), bDrop: $('bDrop'), bNeck: $('bNeck'), bRoot: $('bRoot'),
     wrap: $('blueWrap'), tint: $('tint'), badge: $('badge'), num: $('num'), numMaskC: $('numMaskC'), numBlurFe: $('numBlurFe'),
-    glowOut: $('glowOut'), glowMid: $('glowMid'), glowCore: $('glowCore'), barRim: $('barRim'), rimLightC: $('rimLightC'), selOrg: $('selOrg'), selTail: $('selTail'), selHead: $('selHead'), bAct: $('bAct'), actLabel: $('actLabel'),
+    glow: $('glow'), selOrg: $('selOrg'), selTail: $('selTail'), selHead: $('selHead'), bAct: $('bAct'), actLabel: $('actLabel'),
     icons: [...document.querySelectorAll('.ico')]
   };
   const set = (n, o) => { for (const key in o) n.setAttribute(key, o[key]); };
@@ -595,7 +548,7 @@
   function drawBar(bumps, rips) {
     let d = '';
     for (let i = 0; i < N; i++) { const p = PTS[i], v = disp(p.s, bumps, rips); d += (i ? 'L' : 'M') + f(p.x + p.nx * v) + ' ' + f(p.y + p.ny * v); }
-    el.bar.setAttribute('d', d + 'Z'); el.barRim.setAttribute('d', d + 'Z');
+    el.bar.setAttribute('d', d + 'Z');
     for (const g of el.icons) {                       // icons ride the surface very slightly
       const x = +g.dataset.x, dy = -.3 * disp(sOfX(x), bumps, rips);
       g.setAttribute('transform', `translate(${f(x - 12)} ${f(YC - 12 + dy)})`);
@@ -662,7 +615,7 @@
 
   /* ---------- state + one shared frame loop ---------- */
   let state = 'empty', mode = null, target = 'none', pending = null, last = null, speed = 1, G = 0, running = false, prev = 0;
-  const badge = { anim: false, kind: null, t: 0, T: 0, from: null, rnd: RND0 };
+  const badge = { anim: false, kind: null, t: 0, T: 0, from: null };
   const ptr = { on: false, x: 0, y: 0, px: 0, py: 0, vx: 0, vy: 0, down: false, hot: 0, sc: 0 };   // the pointer, in stage units
   const hov = { x: 340, amp: 0 };
   const glow = { x: 340, y: 222, o: 0 };
@@ -690,12 +643,7 @@
     for (const r of flow) rips.push({ s0: r.s0, age: G - r.t0, A: r.A });
     drawBar(bumps, rips); drawBadge(S, mode);
 
-    const go = Math.min(1, glow.o), gk = .9 + .22 * glow.o;   // pressing swells the light
-    set(el.glowOut, { cx: f(glow.x), cy: f(glow.y), r: f(150 * gk), opacity: f(go) });
-    set(el.glowMid, { cx: f(glow.x), cy: f(glow.y), r: f(56 * gk), opacity: f(go) });
-    set(el.glowCore, { cx: f(glow.x), cy: f(glow.y), r: f(15 * gk), opacity: f(go) });
-    set(el.rimLightC, { cx: f(glow.x), cy: f(glow.y), r: f(go > .01 ? 86 * gk : 0) });
-    el.barRim.setAttribute('opacity', f(go));
+    set(el.glow, { cx: f(glow.x), cy: f(glow.y), opacity: f(glow.o) });
   }
 
   function frame(now) {
@@ -744,7 +692,7 @@
         if (pending != null) { const k = pending; pending = null; go(k); }
         syncUI();
       }
-      if (badge.anim) S = badge.kind === 'in' ? seqIn(badge.t, mode, badge.rnd) : badge.kind === 'out' ? seqOut(badge.t, mode, badge.rnd) : seqMorph(badge.t, badge.from, mode);
+      if (badge.anim) S = badge.kind === 'in' ? seqIn(badge.t, mode) : badge.kind === 'out' ? seqOut(badge.t, mode) : seqMorph(badge.t, badge.from, mode);
     }
     if (!S) S = restScene();
 
@@ -768,7 +716,7 @@
   function kick() { if (!running) { running = true; prev = performance.now(); requestAnimationFrame(frame); } }
 
   function play(kind, m) {
-    Object.assign(badge, { anim: true, kind, t: 0, T: kind === 'in' ? m.T : kind === 'out' ? T_OUT : T_MORPH, from: mode, rnd: roll() });
+    Object.assign(badge, { anim: true, kind, t: 0, T: kind === 'in' ? m.T : kind === 'out' ? T_OUT : T_MORPH, from: mode });
     if (kind !== 'out') mode = m;
     last = { kind, m: mode, from: badge.from };
     kick();
@@ -872,7 +820,7 @@
 
   // Frame-accurate scrubbing, for inspecting a single moment.
   window.fluid = {
-    seek(kind, key, t, from, rnd) { mode = MODES[key]; state = 'badge'; rnd = rnd ? Object.assign({}, RND0, rnd) : RND0; draw(kind === 'in' ? seqIn(t, mode, rnd) : kind === 'out' ? seqOut(t, mode, rnd) : seqMorph(t, MODES[from], mode), t); },
+    seek(kind, key, t, from) { mode = MODES[key]; state = 'badge'; draw(kind === 'in' ? seqIn(t, mode) : kind === 'out' ? seqOut(t, mode) : seqMorph(t, MODES[from], mode), t); },
     sel(from, to, t) { sel.fx = +$(from).dataset.x; sel.key = to; sel.t = t; for (const g of el.icons) g.classList.toggle('on', g.id === to); draw(restScene(), 0); },
     tip(id, p, key) { for (const tp of TIPS) tp.p = tp.id === id ? p : 0; if (key) { plain.key = key; plain.p = 0; stepPlain(0); plain.p = p; } state = 'empty'; draw(restScene(), 0); }
   };
