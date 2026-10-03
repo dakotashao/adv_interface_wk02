@@ -651,15 +651,21 @@ h2 { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: -0.005em; }
   // travel, takes two small hops and stills. Nothing stretches or squashes. Weight shows in how far it drops,
   // how hard it lands, how low it hangs, and how much the bar gives. Both tooltips take the same time.
   const TIPS = {
+    // rattle: how the loose contents are thrown about inside once the box stops (px).
+    //   float  how far up they hang during the fall      floor  how far down they slam before the bottom stops them
+    //   ceil   how far up they bounce before the top stops them      back, last  the two smaller swings that follow
     plain: { drop: 12, hop: 2, pull: 0.8, hang: 0, radius: 12,
-             items: [{ sel: '.tip-body', delay: 30, from: 6, hop: 1 }] },
-    rich:  { drop: 26, hop: 6, pull: 3.2, hang: 8, radius: 14,
-             // The contents are loose inside: title, text and button land one after another, the button last and hardest.
-             items: [{ sel: '.tip-title', delay: 20, from: 8, hop: 1 },
-                     { sel: '.tip-text', delay: 75, from: 10, hop: 1.2 },
-                     { sel: '.tip-action', delay: 155, from: 16, hop: 3, thud: 1.1 }] }
+             rattle: { float: 3, floor: 6, ceil: 5, back: 2, last: 0.5 },
+             items: [{ sel: '.tip-body', lag: 0, thud: 0.3 }] },
+    rich:  { drop: 26, hop: 4, pull: 3.2, hang: 8, radius: 14,
+             rattle: { float: 8, floor: 13, ceil: 13, back: 5, last: 2 },
+             // The button is the heaviest thing inside, so it leads; the text follows a beat behind and piles onto it.
+             items: [{ sel: '.tip-action', lag: 0, thud: 1.5 },
+                     { sel: '.tip-title', lag: 30, extra: 5 },
+                     { sel: '.tip-text', lag: 30, extra: 5 }] }
   };
-  const T_FALL = 200, T_SETTLE = 470, T_HOP1 = 180, T_HOP2 = 110, T_ITEM_HOP = 140;   // ms
+  const T_FALL = 200, T_SETTLE = 600, T_HOP1 = 180, T_HOP2 = 110;   // ms
+  const R1 = 80, R2 = 120, R3 = 130, R4 = 110, R5 = 100;            // ms: slam down, bounce to the top, and three settling swings
   function hops(tau, h) {                                // the same two-hop landing the badge makes
     if (tau <= 0) return 0;
     const p = tau / T_HOP1;
@@ -701,23 +707,44 @@ h2 { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: -0.005em; }
     anchor.style.transform = pull ? `translateY(${(pull * 1.2).toFixed(2)}px)` : '';
     applyBar();
   }
-  // Each item falls into place on its own clock. Returns the extra tug the heavy ones give the bar as they land.
+  // Where a loose item sits, tt ms after the box has stopped. It keeps going down and slams into the floor,
+  // bounces straight up into the ceiling, then swings back and forth a little before lying still.
+  const smooth = p => p * p * (3 - 2 * p);
+  function rattleAt(tt, r) {
+    if (tt <= 0) return -r.float;
+    if (tt < R1) { const p = tt / R1; return -r.float + (r.floor + r.float) * p * p; }                          // accelerating into the floor
+    tt -= R1;
+    if (tt < R2) { const p = tt / R2; return r.floor - (r.floor + r.ceil) * p * (1.6 - 0.6 * p); }              // thrown up, still moving when it hits the top
+    tt -= R2;
+    if (tt < R3) return -r.ceil + (r.ceil + r.back) * smooth(tt / R3);
+    tt -= R3;
+    if (tt < R4) return r.back - (r.back + r.last) * smooth(tt / R4);
+    tt -= R4;
+    if (tt < R5) return -r.last * (1 - smooth(tt / R5));
+    return 0;
+  }
+  // Places every item and returns the jolt the heavy ones give the box and the bar when they hit the floor (+) and the ceiling (-).
   function placeItems(kind, t) {
-    const { tip } = parts(kind);
-    let thud = 0;
-    for (const it of TIPS[kind].items) {
-      const el = tip.querySelector(it.sel), land = T_FALL + it.delay;
+    const { tip } = parts(kind), c = TIPS[kind], r = c.rattle;
+    let jolt = 0;
+    for (const it of c.items) {
+      const el = tip.querySelector(it.sel), tt = t - T_FALL - it.lag;
       let off = 0, op = 1;
-      if (t < land) { const p = t / land; off = -it.from * (1 - p * p); op = Math.min(1, t / (land * 0.7)); }
-      else {
-        const p = (t - land) / T_ITEM_HOP;
-        if (p < 1) { off = -4 * it.hop * p * (1 - p); if (it.thud) thud += it.thud * Math.sin(Math.PI * p); }
+      if (t !== Infinity) {
+        off = rattleAt(tt, r);
+        if (it.extra && off > 0) off *= 1 + it.extra / r.floor;        // the text piles a little further onto the button
+        if (tt < 0) op = Math.min(1, t / (T_FALL * 0.6));
+        if (it.thud) {
+          const a = tt - R1, bq = tt - R1 - R2;
+          if (a > 0 && a < 110) jolt += it.thud * Math.sin(Math.PI * a / 110);
+          if (bq > 0 && bq < 100) jolt -= it.thud * 0.6 * Math.sin(Math.PI * bq / 100);
+        }
       }
       if (el.classList.contains('tip-action') && pressed) off += 1.5;
       el.style.transform = off ? `translateY(${off.toFixed(2)}px)` : '';
       el.style.opacity = op < 1 ? op.toFixed(3) : '';
     }
-    return thud;
+    return jolt;
   }
   function restTip(kind) { placeTip(kind, 0, 0, 0); placeItems(kind, Infinity); }
 
@@ -737,13 +764,13 @@ h2 { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: -0.005em; }
     }
     run('tip-' + kind, T_FALL + T_SETTLE, t => {
       tip.style.opacity = Math.min(1, t / 70);
-      const thud = placeItems(kind, t);
+      const jolt = placeItems(kind, t);
       if (t < T_FALL) {
         const p = t / T_FALL;                             // gravity: distance grows with t squared
         placeTip(kind, -c.drop * (1 - p * p), 0, 0);
       } else {
-        const tau = t - T_FALL;                           // it reaches the end of its travel and yanks the bar
-        placeTip(kind, -hops(tau, c.hop), 0, c.pull * tugAt(tau) + thud);
+        const tau = t - T_FALL;                           // it reaches the end of its travel and yanks the bar;
+        placeTip(kind, -hops(tau, c.hop) + jolt, 0, c.pull * tugAt(tau) + jolt * 0.8);   // the contents knock it again from inside
       }
     }, () => { tip.style.opacity = ''; restTip(kind); });
   }
