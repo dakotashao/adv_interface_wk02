@@ -330,6 +330,7 @@ h2 { font: inherit; letter-spacing: .02em; margin-right: auto; white-space: nowr
   const mq = matchMedia('(prefers-reduced-motion: reduce)');
   const rnd = n => Math.floor(Math.random() * n);
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = rnd(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 
   /* ================= canvas: layout, wires, pan and zoom ================= */
   const Canvas = (() => {
@@ -580,10 +581,10 @@ h2 { font: inherit; letter-spacing: .02em; margin-right: auto; white-space: nowr
   }
 
   /* ================= flap: a line of text that resolves character by character =================
-     Every slot is filled from the start, with the wrong character. Then, left to right and one at
-     a time, a slot swaps in place through a couple of candidates at a fixed tick and locks on the
-     right one; only then does the next slot start, and the last few tick slower. Nothing moves
-     vertically. It clears right to left, faster: each character turns wrong again, then all go. */
+     Every slot is filled from the start, with the wrong character. Then slots turn right in a
+     random order, a few at a time: each swaps in place through two to four candidates at an
+     uneven tick and locks; the last few tick slower. Nothing moves vertically. It clears the
+     same way, faster: characters turn wrong again in a random order, then all go. */
   const UP = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', LOW = UP.toLowerCase(), NUM = '0123456789';
   class Flap {
     constructor(el, o) {
@@ -626,15 +627,24 @@ h2 { font: inherit; letter-spacing: .02em; margin-right: auto; white-space: nowr
       this.show();
       if (!await t.wait(delay)) return false;
       this.mark('cycling');
-      const idx = [...this.final].map((f, i) => i).filter(i => this.final[i] !== ' ' && this.cells[i].s !== 'locked');
-      for (let j = 0; j < idx.length; j++) {
-        const i = idx[j], fin = this.final[i], f = 1 + 0.9 * Math.pow(Math.max(0, (j - (idx.length - 4)) / 3), 1.5);
-        if (this.alt(i, 0) !== fin) for (let k = 0; k < durs.length; k++) {
-          this.put(i, this.alt(i, k), 'cycling', k);
-          if (!await t.wait(durs[k] * f)) return false;
+      /* the order is drawn at random, and a few slots are in motion at once */
+      const idx = shuffle([...this.final].map((f, i) => i).filter(i => this.final[i] !== ' ' && this.cells[i].s !== 'locked'));
+      const base = durs.reduce((a, b) => a + b, 0) / durs.length;
+      let next = 0;
+      const lane = async l => {
+        if (!await t.wait(l * base * 0.6)) return false;
+        while (next < idx.length) {
+          const j = next++, i = idx[j], fin = this.final[i], slow = idx.length - j <= 3 ? 1.5 : 1;
+          if (this.alt(i, 0) !== fin) for (let k = 0, n = 2 + rnd(3); k < n; k++) {
+            this.put(i, this.alt(i, k), 'cycling', k);
+            if (!await t.wait(base * slow * (0.7 + Math.random() * 0.8))) return false;
+          }
+          this.put(i, fin, 'locked');
         }
-        this.put(i, fin, 'locked');
-      }
+        return true;
+      };
+      const lanes = clamp(Math.ceil(idx.length / 5), 2, 4);
+      if (!(await Promise.all(Array.from({ length: lanes }, (_, l) => lane(l)))).every(Boolean)) return false;
       this.mark('locked');
       return true;
     }
@@ -642,7 +652,7 @@ h2 { font: inherit; letter-spacing: .02em; margin-right: auto; white-space: nowr
       if (!await t.wait(delay)) return false;
       if (this.state === 'empty') return true;
       this.mark('clearing');
-      const idx = this.cells.map((c, i) => i).filter(i => this.final[i] !== ' ' && this.cells[i].s !== 'blank').reverse();
+      const idx = shuffle(this.cells.map((c, i) => i).filter(i => this.final[i] !== ' ' && this.cells[i].s !== 'blank'));
       const jobs = idx.map(async (i, j) => {
         if (!await t.wait(j * step)) return false;
         this.put(i, this.alt(i, 0), 'clearing', 1);
@@ -691,7 +701,9 @@ h2 { font: inherit; letter-spacing: .02em; margin-right: auto; white-space: nowr
       });
       if (el.dataset.step !== '3' && !await steps(el, 'step', ['1', '2', '3'], t)) return;
       /* the first digit runs the full 45/45/60/75/110 and locks before the next one starts */
-      const done = await Promise.all(reels.map((r, i) => r.resolve(t, i === 0 ? { delay: 45, durs: ENTER5 } : { delay: 45 + 335 + (i - 1) * 195, durs: [45, 60, 90] })));
+      /* every digit cycles at once on the 45/45/60/75/110 beat; they lock in a random order, a few beats apart */
+      const turn = shuffle(reels.map((r, i) => i));
+      const done = await Promise.all(reels.map((r, i) => r.resolve(t, { delay: 45, durs: [...ENTER5.slice(0, 4), ...Array(turn.indexOf(i) * 2).fill(70), 110] })));
       if (done.every(Boolean) && t.ok()) { el.dataset.state = 'locked'; say('locked'); }
     }
     async function clear() {
@@ -732,6 +744,13 @@ h2 { font: inherit; letter-spacing: .02em; margin-right: auto; white-space: nowr
   })();
 
   /* ================= tooltips: dot, line, dot, frame, then the text ================= */
+  /* A tooltip's lines resolve together, each starting a beat after the one above; the action waits for all of them. */
+  async function resolveAll(t, p) {
+    const done = await Promise.all(p.filter(x => !x.after).map((x, i) => x.reel.resolve(t, { delay: 30 + i * 150, ...x.opt })));
+    if (!done.every(Boolean)) return false;
+    for (const x of p.filter(x => x.after)) if (!await x.reel.resolve(t, { delay: 40, ...x.opt })) return false;
+    return true;
+  }
   function makeTip({ id, wrap, anchor, tip, plan, all, onClosed }) {
     const run = runner();
     let isOpen = false, timer = null, lastPtr = 'mouse';
@@ -774,7 +793,7 @@ h2 { font: inherit; letter-spacing: .02em; margin-right: auto; white-space: nowr
       if (wrap.dataset.link !== '3' && !await steps(wrap, 'link', ['1', '2', '3'], t, 24)) return;
       if (!await t.wait(24)) return;
       if (tip.dataset.step !== '3' && !await steps(tip, 'step', ['1', '2', '3'], t)) return;
-      for (const x of p) if (!await x.reel.resolve(t, { delay: x.delay, ...x.opt })) return;
+      if (!await resolveAll(t, p)) return;
       Canvas.set(id, 'locked');
     }
     async function close() {
@@ -847,7 +866,7 @@ h2 { font: inherit; letter-spacing: .02em; margin-right: auto; white-space: nowr
       head.retarget(...P.head); action.retarget(...P.act);
       act.setAttribute('aria-label', P.label);
     }
-    const plan = () => [headP, ...PAGES[page].body, { reel: action, delay: PAGES[page].actDelay, opt: { durs: [14, 18] }, out: 0 }];
+    const plan = () => [headP, ...PAGES[page].body, { reel: action, after: true, opt: { durs: [14, 18] }, out: 0 }];
     const all = () => [headP, ...status, ...history, { reel: action, out: 0 }];
     const tip = makeTip({ id: 'rich', wrap: $('#s4-wrap'), anchor: $('#s4-anchor'), tip: $('#s4-tip'), plan, all, onClosed: () => point('status') });
 
@@ -860,7 +879,7 @@ h2 { font: inherit; letter-spacing: .02em; margin-right: auto; white-space: nowr
       point(page === 'status' ? 'history' : 'status');
       Canvas.set('rich', 'resolving');
       const p = plan(); p.forEach(x => x.reel.show());
-      for (const x of p) if (!await x.reel.resolve(t, { delay: x.delay, ...x.opt })) return;
+      if (!await resolveAll(t, p)) return;
       Canvas.set('rich', 'locked');
     }
     act.addEventListener('click', () => { if (act.dataset.ready === 'true' && tip.isOpen()) swap(); });
