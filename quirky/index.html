@@ -561,7 +561,7 @@ h2 { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: -0.005em; }
   let K = 1;
   function fitScene() {
     const thumb = document.documentElement.classList.contains('thumb');
-    K = thumb ? 1 : Math.max(1, Math.min((stage.clientHeight / 2 - 12) / 204, stage.clientWidth * 0.2 / 226, 1.5));
+    K = thumb ? 1 : Math.max(1, Math.min((stage.clientHeight / 2 - 12) / 218, stage.clientWidth * 0.2 / 226, 1.5));
     scene.style.setProperty('--k', K.toFixed(3));
   }
   fitScene();
@@ -651,39 +651,40 @@ h2 { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: -0.005em; }
   // travel, takes two small hops and stills. Nothing stretches or squashes. Weight shows in how far it drops,
   // how hard it lands, how low it hangs, and how much the bar gives. Both tooltips take the same time.
   const TIPS = {
+    // drop: how far it falls. stretch: how far its cord gives when it gets there. hang: how much lower it rests
+    // (so the heavier tooltip hangs on a visibly longer cord). pull: how far it drags the bar.
     // rattle: how the loose contents are thrown about inside once the box stops (px).
     //   float  how far up they hang during the fall      floor  how far down they slam before the bottom stops them
     //   ceil   how far up they bounce before the top stops them      back, last  the two smaller swings that follow
-    plain: { drop: 12, hop: 2, pull: 0.8, hang: 0, radius: 12,
+    plain: { drop: 8, stretch: 2, pull: 0.8, hang: 0, radius: 12,
              rattle: { float: 3, floor: 6, ceil: 5, back: 2, last: 0.5 },
              items: [{ sel: '.tip-body', lag: 0, thud: 0.3 }] },
-    rich:  { drop: 26, hop: 4, pull: 3.2, hang: 8, radius: 14,
+    rich:  { drop: 26, stretch: 11, pull: 3.2, hang: 22, radius: 14,
              rattle: { float: 8, floor: 13, ceil: 13, back: 5, last: 2 },
              // The button is the heaviest thing inside, so it leads; the text follows a beat behind and piles onto it.
              items: [{ sel: '.tip-action', lag: 0, thud: 1.5 },
                      { sel: '.tip-title', lag: 30, extra: 5 },
                      { sel: '.tip-text', lag: 30, extra: 5 }] }
   };
-  const T_FALL = 200, T_SETTLE = 600, T_HOP1 = 180, T_HOP2 = 110;   // ms
+  const T_FALL = 200, T_SETTLE = 600;   // ms
   const R1 = 80, R2 = 120, R3 = 130, R4 = 110, R5 = 100;            // ms: slam down, bounce to the top, and three settling swings
-  function hops(tau, h) {                                // the same two-hop landing the badge makes
-    if (tau <= 0) return 0;
-    const p = tau / T_HOP1;
-    if (p < 1) return 4 * h * p * (1 - p);
-    const q = (tau - T_HOP1) / T_HOP2;
-    return q < 1 ? 4 * h * 0.3 * q * (1 - q) : 0;
-  }
-  const tugShape = u => Math.sin(TAU * u * T_SETTLE / 300) * Math.exp(-3.2 * u) * (1 - u);
-  const tugNorm = peakOf(tugShape);
-  const tugAt = tau => (tau <= 0 || tau >= T_SETTLE) ? 0 : tugShape(tau / T_SETTLE) / tugNorm;   // the bar gives, then recovers
-  function boxPath(W, H, r) {                            // a plain rounded box with its caret; it never changes shape
-    const c = W / 2;
-    return `M${r},0 H${c - 6} L${c},-5 L${c + 6},0 H${W - r} Q${W},0 ${W},${r} V${H - r} Q${W},${H} ${W - r},${H}` +
+  // The connector is a cord between the bar and the box. When the box reaches the end of it the cord stretches,
+  // pulls back a little past its resting length, and settles. Only the cord gives; the box stays rigid.
+  const cordShape = u => Math.sin(TAU * u * T_SETTLE / 270) * Math.exp(-4.2 * u) * (1 - u);
+  const cordNorm = peakOf(cordShape);
+  const cordAt = tau => (tau <= 0 || tau >= T_SETTLE) ? 0 : cordShape(tau / T_SETTLE) / cordNorm;
+  const GAP = 12;                                        // px from the bar's bottom edge to a box that hangs at 0
+  // A rounded box whose top runs up into the cord: wide where it joins the box, drawn out thin up to the bar.
+  function boxPath(W, H, r, L) {
+    const c = W / 2, n = v => v.toFixed(2), b = 7, t = 2;
+    return `M${r},0 H${n(c - b)} Q${n(c - t - 0.5)},${n(-L * 0.35)} ${n(c - t)},${n(-L)} H${n(c + t)}` +
+      ` Q${n(c + t + 0.5)},${n(-L * 0.35)} ${n(c + b)},0 H${W - r} Q${W},0 ${W},${r} V${H - r} Q${W},${H} ${W - r},${H}` +
       ` H${r} Q0,${H} 0,${H - r} V${r} Q0,0 ${r},0Z`;
   }
 
   const openState = { plain: false, rich: false };
   const pose = { plain: { y: 0, pull: 0 }, rich: { y: 0, pull: 0 } };
+  const geo = { plain: { W: 0, H: 0 }, rich: { W: 0, H: 0 } };
   const leaveTimers = {};
   let lastPointer = 'mouse', pressed = false;
 
@@ -693,15 +694,18 @@ h2 { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: -0.005em; }
       bg: tip.querySelector('.tip-bg'), path: tip.querySelector('.tip-bg path'), action: tip.querySelector('.tip-action') };
   }
   function measure(kind) {
-    const { inner, bg, path } = parts(kind), W = inner.offsetWidth, H = inner.offsetHeight;
+    const { inner, bg } = parts(kind), W = inner.offsetWidth, H = inner.offsetHeight;
+    geo[kind] = { W, H };
     bg.setAttribute('width', W);
     bg.setAttribute('height', H);
-    path.setAttribute('d', boxPath(W, H, TIPS[kind].radius));
+    placeTip(kind, pose[kind].y, 0, pose[kind].pull);
   }
   // y: px below its hanging place. rot: tilt while falling away. pull: px it drags the bar and its icon down.
-  function placeTip(kind, y, rot, pull) {
-    const { inner, anchor } = parts(kind), ty = TIPS[kind].hang + y;
+  // cord: length to draw the cord at; left out, it reaches from the box up to the bar, so it stretches as the box moves.
+  function placeTip(kind, y, rot, pull, cord) {
+    const { inner, anchor, path } = parts(kind), ty = TIPS[kind].hang + y, g = geo[kind];
     pose[kind].y = y; pose[kind].pull = pull;
+    if (g.W) path.setAttribute('d', boxPath(g.W, g.H, TIPS[kind].radius, Math.max(3, cord == null ? GAP + ty : cord)));
     inner.style.transform = (ty || rot) ? `translateY(${ty.toFixed(2)}px) rotate(${rot.toFixed(2)}deg)` : '';
     pulls[kind] = pull;
     anchor.style.transform = pull ? `translateY(${(pull * 1.2).toFixed(2)}px)` : '';
@@ -770,7 +774,8 @@ h2 { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: -0.005em; }
         placeTip(kind, -c.drop * (1 - p * p), 0, 0);
       } else {
         const tau = t - T_FALL;                           // it reaches the end of its travel and yanks the bar;
-        placeTip(kind, -hops(tau, c.hop) + jolt, 0, c.pull * tugAt(tau) + jolt * 0.8);   // the contents knock it again from inside
+        const give = cordAt(tau);                         // the cord stretches, pulls back, and settles
+        placeTip(kind, c.stretch * give + jolt, 0, c.pull * give + jolt * 0.8);   // the contents knock it again from inside
       }
     }, () => { tip.style.opacity = ''; restTip(kind); });
   }
@@ -807,7 +812,8 @@ h2 { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: -0.005em; }
       const pull = e.slip * 0.4 * Math.max(0, 1 - tau / 40) - e.kick * reboundShape(u, e.ring) / e.norm;   // unloaded, the bar springs up
       if (tau < e.fall) {
         const f = tau / e.fall;
-        placeTip(kind, e.slip + e.dist * f * f, e.tilt * f, pull);            // gravity again
+        const held = GAP + TIPS[kind].hang + e.slip;      // the cord lets go of the bar and shrinks back into the box
+        placeTip(kind, e.slip + e.dist * f * f, e.tilt * f, pull, held + (5 - held) * Math.min(1, f * 5));   // gravity again
         tip.style.opacity = f < 0.3 ? 1 : Math.max(0, 1 - (f - 0.3) / 0.7);   // a short drop, gone before it travels far
       } else {
         if (!tip.hidden) { tip.hidden = true; tip.style.opacity = ''; }
